@@ -1,61 +1,122 @@
 #include <iostream>
 
-float VirtualToNDC_X(float x, float virtualWidth, float aspectRatio,bool scale = false)
-{
-	return (x / virtualWidth) * (2.0f * aspectRatio) - (scale == false ? aspectRatio : 0.0f);
-}
+#include "Core/Transform2dComponent.h"
+#include "Core/UiComponent.h"
 
-float VirtualToNDC_Y(float y, float virtualHeight, bool scale = false)
-{
-	return (y / virtualHeight) * 2.0f - (scale == false? 1.0f : 0.0f);
-}
 
-#include "Game.h"
+#include "InputManager.h"
 #include "Core/CameraComponent.h"
+#include "Core/Mesh.h"
+#include "Core/Texture.h"
+#include "Core/TrasformComponent.h"
+#include "Core/Window.h"
+#include "ECS/Component.h"
+#include "ECS/Entities.h"
+#include "ECS/Registry.h"
+#include "Tools/Chrono.h"
+
+// make you ecs type with entity 8 / 16 / 32 / 64 and the size of allocation between 1 and infinity
+using ecsType = KGR::ECS::Registry<KGR::ECS::Entity::_64, 100>;
+
 int main(int argc, char** argv)
 {
-
+	// this part is due to the archi of the code to retrieve the folder resources
 	std::filesystem::path exePath = argv[0];
 	std::filesystem::path projectRoot = exePath.parent_path().parent_path().parent_path().parent_path().parent_path();
-	KGR::RenderWindow::Init();
-	std::unique_ptr<KGR::RenderWindow> window = std::make_unique<KGR::RenderWindow>(glm::vec2{ 1920,800 }, "test", projectRoot / "Ressources");
-	window->GetInputManager()->SetMode(GLFW_CURSOR_DISABLED);
 
+	// init the rendering system ( init glfw )
+	KGR::RenderWindow::Init();
+	// create your window with the size the name and the resources path
+	std::unique_ptr<KGR::RenderWindow> window = std::make_unique<KGR::RenderWindow>(glm::vec2{ 1920,800 }, "test", projectRoot / "Ressources");
+
+	// getInputManager retrieve our input system where you can have the mouse pos mouse delta key pressed ... and set the cursor mode 
+	window->GetInputManager()->SetMode(GLFW_CURSOR_NORMAL);
+
+	// create your ecs 
 	ecsType registry = ecsType{};
 
 
+	// camera 
 	{
+		// a calera need a cameraComponent that can be orthographic or perspective and a transform
+
+		// create the camera with the fov , the size of the window (must be updated ) and the far and near rendering and the mode 
 		CameraComponent cam = CameraComponent::Create(glm::radians(45.0f),window->GetSize().x,window->GetSize().y,0.01f,100.0f,CameraComponent::Type::Perspective);
 		TransformComponent transform;
+		// create a transform and set pos and dir 
 		transform.SetPosition({ 0,3,5 });
 		transform.LookAt({ 0,0,0 });
+		// now create an entity , an alias here std::uint64_t
 		auto e = registry.CreateEntity();
+
+		// now move the component into the ecs
 		registry.AddComponents(e, std::move(cam), std::move(transform));
 	}
 
-
+	
+	// mesh
 	{
+		// a mesh need a meshComponent a transform and a texture 
+
+		// create a mesh and load it with the cash loader
 		MeshComponent mesh;
 		mesh.mesh = &MeshLoader::Load("Models/cube.obj",window->App());
 
+		// create a texture 
 		TextureComponent text;
+		// allocate the size of the texture must be the same as the number of submeshes 
 		text.SetSize(mesh.mesh->GetSubMeshesCount());
+		// then fill the texture ( this system need to be refact but for now you need to do it like that
 		for (int i = 0; i < mesh.mesh->GetSubMeshesCount(); ++i)
 			text.AddTexture(i, &TextureLoader::Load("Textures/viking_room.png", window->App()));
 
+		// create the transform and set all the data
 		TransformComponent transform;
 		transform.SetPosition({ 0,0,0 });
+		transform.SetScale({ 2.0f,3.0f,4.0f });
+		// same create an entity / id
 		auto e = registry.CreateEntity();
+		// fill the component
 		registry.AddComponents(e, std::move(mesh), std::move(text), std::move(transform));
 	}
 
+	// light
 	{
+		// the light need transform component and light component
+		// all lights type have their own system to create them go in the file to understand
 		LightComponent<LightData::Type::Spot> lc = LightComponent<LightData::Type::Spot>::Create({ 1,0,1 }, { 1,1,1 }, 10.0f,100.0f,glm::radians(5.0f),0.15f);
+		// set the transform but certain light need dir some position or both so just use what necessary 
 		TransformComponent transform;
 		transform.SetPosition({ 0,5,0 });
 		transform.LookAtDir({ 0,-1,0 });
+		// same 
 		auto e = registry.CreateEntity();
+		// same
 		registry.AddComponents(e, std::move(lc), std::move(transform));
+	}
+
+	// ui ( not fully operational)
+	{
+		// you need texture transform and ui component
+		// for the transform it only use for the rotation 
+		TransformComponent2d transform;
+		// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+		transform.SetRotation(glm::radians(-45.0f));
+		// create your ui with a virtual resolution and an anchor default center
+		UiComponent ui({1920,1080},UiComponent::Anchor::LeftTop);
+		// here set the position in the virtual resolution
+		ui.SetPos({ 0, 0 });
+		// here the scale
+		ui.SetScale({ 200,200 });
+		// create a texture but be aware that only the first texture in the component will be use 
+		TextureComponent texture;
+		texture.SetSize(1);
+		texture.AddTexture(0, &TextureLoader::Load("Textures/texture.jpg", window->App()));
+		
+		// same as always 
+		auto e = registry.CreateEntity();
+		registry.AddComponents(e, std::move(transform), std::move(ui),std::move(texture));
+
 	}
 
 	float current = 0.0f;
@@ -142,48 +203,17 @@ int main(int argc, char** argv)
 			for (auto& e : es)
 				window->RegisterLight(registry.GetComponent<LightComponent<LightData::Type::Directional>>(e), registry.GetComponent<TransformComponent>(e));
 		}
-
-
-		float aspectRatio = static_cast<float>(window->GetSize().x) / static_cast<float>(window->GetSize().y);
-		auto scaleX = [&](float x)-> float
-			{
-				return 2.0f * (((x/ 1920.0f) * aspectRatio) / (16.0f / 9.0f));
-			};
-		auto scaleY = [&](float x)-> float
-			{
-				return 2.0f * (x / 1080.0f);
-			};
-		auto posX = [&](float x)-> float
-			{
-
-				return (2.0f * aspectRatio / 1920.0f) * x - aspectRatio;
-			};
-		auto posY = [&](float y)-> float
-			{
-				
-				return (2.0f / 1080.0f) * y - 1.0f;
-			};
-
-		auto scaleX_ = VirtualToNDC_X(1920, 1920.0f, aspectRatio,true);
-		std::cout << scaleX_;
-		auto posX_ = VirtualToNDC_X(0, 1920.0f, aspectRatio);
-		std::cout << posX_;
-
-		auto scaleY_ = VirtualToNDC_Y(1080, 1080.0f,true);
-		std::cout << scaleY_;
-		auto posY_ = VirtualToNDC_Y(0, 1080.0f);
-		std::cout << posY_;
-
-		glm::mat3 fullScreenMat = glm::mat3(
-			VirtualToNDC_X(1920,1920.0f,aspectRatio,true), 0.0f, VirtualToNDC_X(0, 1920.0f, aspectRatio),
-			0.0f, VirtualToNDC_Y(1080,1080,true), VirtualToNDC_Y(0,1080),
-			0.0f,		0.0f,	1.0f		 );
-
-
-		window->App()->RegisterUi(UiData{ {1,1,1,1},fullScreenMat }, &TextureLoader::Load("Textures/texture.jpg", window->App()),window->GetSize());
+		{
+			auto es = registry.GetAllComponentsView < TextureComponent, TransformComponent2d,UiComponent > ();
+			for (auto& e : es)
+				{
+					auto transform = registry.GetComponent<TransformComponent2d>(e);
+					auto ui = registry.GetComponent<UiComponent>(e);
+					auto texture = registry.GetComponent<TextureComponent>(e);
+					window->RegisterUi(ui,transform,texture);
+				}
+		}
 		window->Render({ 0.53f, 0.81f, 0.92f, 1.0f });
-
-
 	}
 
 
