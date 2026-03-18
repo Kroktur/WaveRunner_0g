@@ -15,6 +15,17 @@
 #include "ECS/Registry.h"
 #include "Tools/Chrono.h"
 
+struct controlComponentZQSD
+{
+
+};
+
+struct controlComponentArrow
+{
+
+};
+
+
 // make you ecs type with entity 8 / 16 / 32 / 64 and the size of allocation between 1 and infinity
 using ecsType = KGR::ECS::Registry<KGR::ECS::Entity::_64, 100>;
 
@@ -41,10 +52,10 @@ int main(int argc, char** argv)
 		// a calera need a cameraComponent that can be orthographic or perspective and a transform
 
 		// create the camera with the fov , the size of the window (must be updated ) and the far and near rendering and the mode 
-		CameraComponent cam = CameraComponent::Create(glm::radians(45.0f),window->GetSize().x,window->GetSize().y,0.01f,100.0f,CameraComponent::Type::Perspective);
+		CameraComponent cam = CameraComponent::Create(glm::radians(90.0f),window->GetSize().x,window->GetSize().y,0.01f,100.0f,CameraComponent::Type::Perspective);
 		TransformComponent transform;
 		// create a transform and set pos and dir 
-		transform.SetPosition({ 0,3,5 });
+		transform.SetPosition({ 0,3,7 });
 		transform.LookAt({ 0,0,0 });
 		// now create an entity , an alias here std::uint64_t
 		auto e = registry.CreateEntity();
@@ -72,22 +83,45 @@ int main(int argc, char** argv)
 
 		// create the transform and set all the data
 		TransformComponent transform;
-		transform.SetPosition({ 0,0,0 });
-		transform.SetScale({ 2.0f,3.0f,4.0f });
+		transform.SetPosition({ 0,-1,0 });
+		transform.SetScale({ 6.0f,0.3f,20.0f });
 		// same create an entity / id
 		auto e = registry.CreateEntity();
 		// fill the component
-		registry.AddComponents(e, std::move(mesh), std::move(text), std::move(transform));
+
+		controlComponentArrow arrow;
+		registry.AddComponents(e, std::move(mesh), std::move(text), std::move(transform),std::move(arrow));
+
+
+
+		MeshComponent mesh_player;
+		mesh_player.mesh = &MeshLoader::Load("Models/cube.obj", window->App());
+
+		TextureComponent text_player;
+
+		text_player.SetSize(mesh_player.mesh->GetSubMeshesCount());
+
+		for (int i = 0; i < mesh_player.mesh->GetSubMeshesCount(); ++i)
+			text_player.AddTexture(i, &TextureLoader::Load("Textures/viking_room.png", window->App()));
+
+		TransformComponent transform_player;
+		transform_player.SetPosition({ 0,1,2 });
+		transform_player.SetScale({ 1.0f,1.0f,1.0f });
+
+		controlComponentZQSD zqsd;
+
+		auto e_player = registry.CreateEntity();
+
+		registry.AddComponents(e_player, std::move(mesh_player), std::move(text_player), std::move(transform_player),std::move(zqsd));
 	}
 
 	// light
 	{
 		// the light need transform component and light component
 		// all lights type have their own system to create them go in the file to understand
-		LightComponent<LightData::Type::Spot> lc = LightComponent<LightData::Type::Spot>::Create({ 1,0,1 }, { 1,1,1 }, 10.0f,100.0f,glm::radians(5.0f),0.15f);
+		LightComponent<LightData::Type::Directional> lc = LightComponent<LightData::Type::Directional>::Create({ 1,1,1 }, { 1,1,1 },100.0f);
 		// set the transform but certain light need dir some position or both so just use what necessary 
 		TransformComponent transform;
-		transform.SetPosition({ 0,5,0 });
 		transform.LookAtDir({ 0,-1,0 });
 		// same 
 		auto e = registry.CreateEntity();
@@ -129,31 +163,58 @@ int main(int argc, char** argv)
 		
 
 		{
-			auto es = registry.GetAllComponentsView<MeshComponent,TransformComponent>();
+			auto es = registry.GetAllComponentsView<TransformComponent, controlComponentZQSD>();
+			for (auto& e : es)
+			{
+				auto input = window->GetInputManager();
+				auto& myTransform = registry.GetComponent<TransformComponent>(e);
+
+				static float speed = 25.0f;
+				if (input->IsKeyDown(KGR::Key::Q))
+					myTransform.SetPosition({ -1.3f,1.0f,2.0f });
+				if (input->IsKeyDown(KGR::Key::A))
+					myTransform.SetPosition({ -1.3f,1.0f,2.0f });
+				if (input->IsKeyDown(KGR::Key::D))
+					myTransform.SetPosition({ 1.3f,1.0f,2.0f });
+
+				if (input->IsKeyDown(KGR::Key::Z))
+					myTransform.SetPosition({ 0.0f,2.0f,2.0f });
+				if (input->IsKeyDown(KGR::Key::W))
+					myTransform.SetPosition({ 0.0f,2.0f,2.0f });
+				if (input->IsKeyDown(KGR::Key::S))
+					myTransform.SetPosition({ 0.0f,1.0f,2.0f });
+
+
+				myTransform.GetLocalAxe<RotData::Dir::Forward>();
+				//if (input->IsKeyDown(KGR::Key::A))
+				//	registry.GetComponent<TransformComponent>(e).RotateQuat<RotData::Orientation::Roll>(glm::radians(-speed * dt));
+				//if (input->IsKeyDown(KGR::Key::E))
+				//	registry.GetComponent<TransformComponent>(e).RotateQuat<RotData::Orientation::Roll>(glm::radians(speed * dt));
+			}
+
+		}
+
+
+		{
+			auto es = registry.GetAllComponentsView<TransformComponent, controlComponentArrow>();
 			for (auto& e : es)
 			{
 				auto input = window->GetInputManager();
 
 				static float speed = 25.0f;
-				if (input->IsKeyDown(KGR::Key::Q))
+				if (input->IsKeyDown(KGR::Key::Left_arrow))
 					registry.GetComponent<TransformComponent>(e).RotateQuat<RotData::Orientation::Yaw>(glm::radians(speed * dt));
-				if (input->IsKeyDown(KGR::Key::D))
+				if (input->IsKeyDown(KGR::Key::Right_arrow))
 					registry.GetComponent<TransformComponent>(e).RotateQuat<RotData::Orientation::Yaw>(glm::radians(-speed * dt));
 
-				if (input->IsKeyDown(KGR::Key::Z))
-					registry.GetComponent<TransformComponent>(e).RotateQuat<RotData::Orientation::Pitch>(glm::radians(-speed * dt));
-				if (input->IsKeyDown(KGR::Key::S))
+				if (input->IsKeyDown(KGR::Key::Up_arrow))
 					registry.GetComponent<TransformComponent>(e).RotateQuat<RotData::Orientation::Pitch>(glm::radians(speed * dt));
+				if (input->IsKeyDown(KGR::Key::Down_arrow))
+					registry.GetComponent<TransformComponent>(e).RotateQuat<RotData::Orientation::Pitch>(glm::radians(-speed * dt));
 
-
-
-				if (input->IsKeyDown(KGR::Key::A))
-					registry.GetComponent<TransformComponent>(e).RotateQuat<RotData::Orientation::Roll>(glm::radians(-speed * dt));
-				if (input->IsKeyDown(KGR::Key::E))
-					registry.GetComponent<TransformComponent>(e).RotateQuat<RotData::Orientation::Roll>(glm::radians(speed * dt));
 			}
-
 		}
+
 
 		KGR::RenderWindow::PollEvent();
 		window->Update();
