@@ -75,8 +75,8 @@ int main(int argc, char** argv)
 		CameraComponent cam = CameraComponent::Create(glm::radians(90.0f),window->GetSize().x,window->GetSize().y,0.01f,100.0f,CameraComponent::Type::Perspective);
 		TransformComponent transform;
 		// create a transform and set pos and dir 
-		transform.SetPosition({ 0,3,7 });
-		transform.LookAt({ 0,0,0 });
+		transform.SetPosition({ 0,4,7 });
+		transform.LookAt({ 0,1,2 });
 		// now create an entity , an alias here std::uint64_t
 		auto e = registry.CreateEntity();
 
@@ -90,27 +90,88 @@ int main(int argc, char** argv)
 		// a mesh need a meshComponent a transform and a texture 
 
 		// create a mesh and load it with the cash loader
-		MeshComponent mesh;
-		mesh.mesh = &MeshLoader::Load("Models/cube.obj",window->App());
+		MeshComponent mesh_down;
+		mesh_down.mesh = &MeshLoader::Load("Models/cube.obj",window->App());
 
 		// create a texture 
-		TextureComponent text;
+		TextureComponent text_down;
 		// allocate the size of the texture must be the same as the number of submeshes 
-		text.SetSize(mesh.mesh->GetSubMeshesCount());
+		text_down.SetSize(mesh_down.mesh->GetSubMeshesCount());
 		// then fill the texture ( this system need to be refact but for now you need to do it like that
-		for (int i = 0; i < mesh.mesh->GetSubMeshesCount(); ++i)
-			text.AddTexture(i, &TextureLoader::Load("Textures/viking_room.png", window->App()));
+		for (int i = 0; i < mesh_down.mesh->GetSubMeshesCount(); ++i)
+			text_down.AddTexture(i, &TextureLoader::Load("Textures/viking_room.png", window->App()));
 
 		// create the transform and set all the data
-		TransformComponent transform;
-		transform.SetPosition({ 0,-1,0 });
-		transform.SetScale({ 6.0f,0.3f,20.0f });
+		TransformComponent transform_down;
+		transform_down.SetPosition({ 0,-1,0 });
+		transform_down.SetScale({ 6.0f,0.3f,20.0f });
 		// same create an entity / id
-		auto e = registry.CreateEntity();
+		auto e_down = registry.CreateEntity();
 		// fill the component
 
-		controlComponentArrow arrow;
-		registry.AddComponents(e, std::move(mesh), std::move(text), std::move(transform),std::move(arrow));
+		registry.AddComponents(e_down, std::move(mesh_down), std::move(text_down), std::move(transform_down));
+
+
+
+		MeshComponent mesh_up;
+		mesh_up.mesh = &MeshLoader::Load("Models/cube.obj", window->App());
+	
+		TextureComponent text_up;
+
+		text_up.SetSize(mesh_up.mesh->GetSubMeshesCount());
+
+		for (int i = 0; i < mesh_up.mesh->GetSubMeshesCount(); ++i)
+			text_up.AddTexture(i, &TextureLoader::Load("Textures/viking_room.png", window->App()));
+
+		TransformComponent transform_up;
+		transform_up.SetPosition({ 0,7,0 });
+		transform_up.SetScale({ 6.0f,0.3f,20.0f });
+
+		auto e_up = registry.CreateEntity();
+
+		registry.AddComponents(e_up, std::move(mesh_up), std::move(text_up), std::move(transform_up));
+
+
+
+		MeshComponent mesh_left;
+		mesh_left.mesh = &MeshLoader::Load("Models/cube.obj", window->App());
+
+		TextureComponent text_left;
+
+		text_left.SetSize(mesh_left.mesh->GetSubMeshesCount());
+
+		for (int i = 0; i < mesh_left.mesh->GetSubMeshesCount(); ++i)
+			text_left.AddTexture(i, &TextureLoader::Load("Textures/viking_room.png", window->App()));
+
+		TransformComponent transform_left;
+		transform_left.SetPosition({ -7,2,0 });
+		transform_left.SetScale({ 6.0f,0.3f,20.0f });
+		transform_left.RotateEuler<RotData::Orientation::Roll>(glm::radians(89.0f));
+
+		auto e_left = registry.CreateEntity();
+
+		registry.AddComponents(e_left, std::move(mesh_left), std::move(text_left), std::move(transform_left));
+
+
+
+		MeshComponent mesh_right;
+		mesh_right.mesh = &MeshLoader::Load("Models/cube.obj", window->App());
+
+		TextureComponent text_right;
+
+		text_right.SetSize(mesh_right.mesh->GetSubMeshesCount());
+
+		for (int i = 0; i < mesh_right.mesh->GetSubMeshesCount(); ++i)
+			text_right.AddTexture(i, &TextureLoader::Load("Textures/viking_room.png", window->App()));
+
+		TransformComponent transform_right;
+		transform_right.SetPosition({ 7,2,0 });
+		transform_right.SetScale({ 6.0f,0.3f,20.0f });
+		transform_right.RotateEuler<RotData::Orientation::Roll>(glm::radians(-89.0f));
+
+		auto e_right = registry.CreateEntity();
+
+		registry.AddComponents(e_right, std::move(mesh_right), std::move(text_right), std::move(transform_right));
 
 
 
@@ -129,10 +190,11 @@ int main(int argc, char** argv)
 		transform_player.SetScale({ 1.0f,1.0f,1.0f });
 
 		controlComponentZQSD zqsd;
+		controlComponentArrow arrow;
 
 		auto e_player = registry.CreateEntity();
 
-		registry.AddComponents(e_player, std::move(mesh_player), std::move(text_player), std::move(transform_player),std::move(zqsd));
+		registry.AddComponents(e_player, std::move(mesh_player), std::move(text_player), std::move(transform_player),std::move(zqsd),std::move(arrow));
 	}
 
 	// light
@@ -191,11 +253,11 @@ int main(int argc, char** argv)
 
 				static float speed = 25.0f;
 				if (input->IsKeyDown(KGR::Key::Q))
-					myTransform.SetPosition({ -1.3f,1.0f,2.0f });
+					myTransform.SetPosition({ -1.30f,1.0f,2.0f });
 				if (input->IsKeyDown(KGR::Key::A))
-					myTransform.SetPosition({ -1.3f,1.0f,2.0f });
+					myTransform.SetPosition({ -1.30f,1.0f,2.0f });
 				if (input->IsKeyDown(KGR::Key::D))
-					myTransform.SetPosition({ 1.3f,1.0f,2.0f });
+					myTransform.SetPosition({ 1.30f,1.0f,2.0f });
 
 				if (input->IsKeyDown(KGR::Key::Z))
 					myTransform.SetPosition({ 0.0f,2.0f,2.0f });
@@ -220,17 +282,18 @@ int main(int argc, char** argv)
 			for (auto& e : es)
 			{
 				auto input = window->GetInputManager();
+				auto& myTransform = registry.GetComponent<TransformComponent>(e);
 
 				static float speed = 25.0f;
 				if (input->IsKeyDown(KGR::Key::Left_arrow))
-					registry.GetComponent<TransformComponent>(e).RotateQuat<RotData::Orientation::Yaw>(glm::radians(speed * dt));
+					myTransform.SetPosition({ -6.0f,2.0f,2.0f });
 				if (input->IsKeyDown(KGR::Key::Right_arrow))
-					registry.GetComponent<TransformComponent>(e).RotateQuat<RotData::Orientation::Yaw>(glm::radians(-speed * dt));
+					myTransform.SetPosition({ 6.0f,2.0f,2.0f });
 
 				if (input->IsKeyDown(KGR::Key::Up_arrow))
-					registry.GetComponent<TransformComponent>(e).RotateQuat<RotData::Orientation::Pitch>(glm::radians(speed * dt));
+					myTransform.SetPosition({ 0.0f,5.0f,2.0f });
 				if (input->IsKeyDown(KGR::Key::Down_arrow))
-					registry.GetComponent<TransformComponent>(e).RotateQuat<RotData::Orientation::Pitch>(glm::radians(-speed * dt));
+					myTransform.SetPosition({ 0.0f,1.0f,2.0f });
 
 			}
 		}
