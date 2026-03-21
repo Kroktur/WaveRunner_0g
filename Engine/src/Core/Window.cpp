@@ -1,6 +1,7 @@
 #include "Core/Window.h"
 
-#include "InputManager.h"
+#include "Audio/SoundComponent.h"
+#include "Core/InputManager.h"
 #include "Core/CameraComponent.h"
 
 KGR::RenderWindow::RenderWindow(glm::ivec2 size, const char* name, const std::filesystem::path& GlobResourcesPath)
@@ -9,6 +10,8 @@ KGR::RenderWindow::RenderWindow(glm::ivec2 size, const char* name, const std::fi
 	MeshLoader::SetGlobalFIlePath(GlobResourcesPath);
 	TextureLoader::SetGlobalFIlePath(GlobResourcesPath);
 	FileManager::SetGlobalFIlePath(GlobResourcesPath);
+	Audio::WavManager::SetGlobalFIlePath(GlobResourcesPath);
+	Audio::WavStreamManager::SetGlobalFIlePath(GlobResourcesPath);
 
 
 	m_window.CreateMyWindow(size, name, nullptr, nullptr);
@@ -31,6 +34,8 @@ void KGR::RenderWindow::Destroy()
 	MeshLoader::UnloadAll();
 	TextureLoader::UnloadAll();
 	FileManager::UnloadAll();
+	Audio::WavManager::UnloadAll();
+	Audio::WavStreamManager::UnloadAll();
 }
 
 bool KGR::RenderWindow::ShouldClose() const
@@ -68,9 +73,23 @@ void KGR::RenderWindow::RegisterCam(CameraComponent& cam, TransformComponent& tr
 	m_core.RegisterCam(transform.GetFullTransform(),cam.GetView(),cam.GetProj());
 }
 
-void KGR::RenderWindow::RegisterRender(MeshComponent& mesh, TransformComponent& transform, TextureComponent& texture)
+void KGR::RenderWindow::RegisterRender(MeshComponent& mesh, TransformComponent& transform, MaterialComponent& material)
 {
-	m_core.RegisterRender(*mesh.mesh, transform.GetFullTransform(), texture.GetAllTextures());
+	
+
+	for (auto& mat : material.materials)
+	{
+		if (!mat.baseColor)
+		mat.baseColor = &TextureLoader::Load("Textures/Base/base_color.png", App());
+		if (!mat.pbrMap)
+		mat.pbrMap = &TextureLoader::Load("Textures/Base/base_OMR_map.png", App());
+		if (!mat.normalMap)
+		mat.normalMap = &TextureLoader::Load("Textures/Base/base_normal_map.png", App());
+		if (!mat.emissive)
+		mat.emissive = &TextureLoader::Load("Textures/Base/base_emissive_map.png", App());
+	}
+	
+	m_core.RegisterRender(*mesh.mesh, transform.GetFullTransform(), material.materials);
 }
 
 void KGR::RenderWindow::RegisterUi(UiComponent& component, TransformComponent2d& transform, TextureComponent& texture)
@@ -78,7 +97,11 @@ void KGR::RenderWindow::RegisterUi(UiComponent& component, TransformComponent2d&
 	float aspectRatio = static_cast<float>(GetSize().x) / static_cast<float>(GetSize().y);
 	transform.SetPosition(component.GetPosNdc(aspectRatio));
 	transform.SetScale(component.GetScaleNdc(aspectRatio));
-	m_core.RegisterUi(UiData{ component.GetColor(),transform.GetFullTransform() }, texture.GetTexture(0), GetSize());
+
+	if (!texture.texture)
+		texture.texture = &TextureLoader::Load("Textures/Base/base_color.png", App());
+
+	m_core.RegisterUi(UiData{ component.GetColor(),transform.GetFullTransform() }, texture.texture, GetSize());
 }
 
 void KGR::RenderWindow::Render(const glm::vec4& clearColor, ImDrawData* imguiDraw)
