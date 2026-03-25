@@ -21,17 +21,6 @@
 #include "Core/Scene.h"
 #include "IGameScene.h"
 
-struct controlComponentZQSD
-{
-
-};
-
-struct controlComponentArrow
-{
-
-};
-
-
 // make you ecs type with entity 8 / 16 / 32 / 64 and the size of allocation between 1 and infinity
 using ecsType = KGR::ECS::Registry<KGR::ECS::Entity::_64, 100>;
 
