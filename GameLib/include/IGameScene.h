@@ -393,6 +393,7 @@ struct GameScene : public IGameScene
 						playerComp.StartDir = DirectionState::DROITE;
 						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 6.0f,2.5f,2.0f });
 					}
+
 					switch (playerComp.StartPos)
 					{
 					case PositionState::CENTRE:
@@ -441,6 +442,7 @@ struct GameScene : public IGameScene
 						playerComp.StartDir = DirectionState::DROITE;
 						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 6.0f,2.5f,2.0f });
 					}
+
 					switch (playerComp.StartPos)
 					{
 					case PositionState::CENTRE:
@@ -489,6 +491,7 @@ struct GameScene : public IGameScene
 						playerComp.StartDir = DirectionState::DROITE;
 						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 6.0f,2.5f,2.0f });
 					}
+
 					switch (playerComp.StartPos)
 					{
 					case PositionState::CENTRE:
@@ -537,6 +540,7 @@ struct GameScene : public IGameScene
 						playerComp.StartDir = DirectionState::BAS;
 						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 0.0f,0.0f,2.0f });
 					}
+
 					switch (playerComp.StartPos)
 					{
 					case PositionState::CENTRE:
