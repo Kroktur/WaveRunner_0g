@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Core/Window.h>
+
 struct PlayerComponent
 {
 	float health = 3.0f;
