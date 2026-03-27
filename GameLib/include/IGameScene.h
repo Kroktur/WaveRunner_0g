@@ -22,6 +22,11 @@
 #include "Math/Collision2d.h"
 
 #include "EventBus.h"
+#include "Core/gravityComponent.h"
+#include "Math/CollisionComponent.h"
+#include "Math/OBB.h"
+#include "Math/SAT.h"
+
 using ecsType = KGR::ECS::Registry<KGR::ECS::Entity::_64, 100>;
 
 glm::vec3 camCurrentPos = { 0,8,15 };
@@ -57,6 +62,18 @@ struct playerComponent
 	float distMoove = 0;
 	glm::vec3 actualPos;
 	glm::vec3 targetPos;
+
+	float life = 3;
+};
+
+struct Plateform
+{
+
+};
+
+struct Obstacle
+{
+	float velocityObstacle = 6.0f;
 };
 
 struct ChangeSceneEvent
@@ -174,6 +191,10 @@ protected:
 
 struct GameScene : public IGameScene
 {
+	float spawnTimer = 0.0f;
+	float spawnInterval = 2.0f;
+	float obstacleCount = 0;
+
 	GameScene(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time){}
 	void Init(SceneManager* manager) override
 	{
@@ -217,6 +238,9 @@ struct GameScene : public IGameScene
 				text_down.materials[i] = mat_down;
 			}
 
+			CollisionComp collider;
+			collider.collider = &ColliderManager::Load("plateformDown", platform_down.mesh);
+
 			// create the transform and set all the data
 			TransformComponent transform_down;
 			transform_down.SetPosition({ 0,-1,0 });
@@ -224,7 +248,7 @@ struct GameScene : public IGameScene
 			// same create an entity / id
 			auto e_down = m_ecs.CreateEntity();
 			// fill the component
-			m_ecs.AddComponents(e_down, std::move(platform_down), std::move(text_down), std::move(transform_down));
+			m_ecs.AddComponents(e_down, std::move(platform_down), std::move(text_down), std::move(transform_down), std::move(collider), Plateform{});
 		}
 
 		{
@@ -242,13 +266,18 @@ struct GameScene : public IGameScene
 
 				text_up.materials[i] = mat_up;
 			}
+
+
+			CollisionComp collider;
+			collider.collider = &ColliderManager::Load("plateformUp", platform_up.mesh);
+
 			TransformComponent transform_up;
 			transform_up.SetPosition({ 0,6,0 });
 			transform_up.SetScale({ 6.0f,0.3f,20.0f });
 
 			auto e_up = m_ecs.CreateEntity();
 
-			m_ecs.AddComponents(e_up, std::move(platform_up), std::move(text_up), std::move(transform_up));
+			m_ecs.AddComponents(e_up, std::move(platform_up), std::move(text_up), std::move(transform_up), std::move(collider), Plateform{});
 		}
 
 		{
@@ -266,6 +295,11 @@ struct GameScene : public IGameScene
 
 				text_left.materials[i] = mat_left;
 			}
+
+
+			CollisionComp collider;
+			collider.collider = &ColliderManager::Load("plateformLeft", platform_left.mesh);
+
 			TransformComponent transform_left;
 			transform_left.SetPosition({ -7,2,0 });
 			transform_left.SetScale({ 6.0f,0.3f,20.0f });
@@ -273,7 +307,7 @@ struct GameScene : public IGameScene
 
 			auto e_left = m_ecs.CreateEntity();
 
-			m_ecs.AddComponents(e_left, std::move(platform_left), std::move(text_left), std::move(transform_left));
+			m_ecs.AddComponents(e_left, std::move(platform_left), std::move(text_left), std::move(transform_left), std::move(collider), Plateform{});
 		}
 
 		{
@@ -291,6 +325,11 @@ struct GameScene : public IGameScene
 
 				text_right.materials[i] = mat_right;
 			}
+
+
+			CollisionComp collider;
+			collider.collider = &ColliderManager::Load("plateformRight", platform_right.mesh);
+
 			TransformComponent transform_right;
 			transform_right.SetPosition({ 7,2,0 });
 			transform_right.SetScale({ 6.0f,0.3f,20.0f });
@@ -298,7 +337,7 @@ struct GameScene : public IGameScene
 
 			auto e_right = m_ecs.CreateEntity();
 
-			m_ecs.AddComponents(e_right, std::move(platform_right), std::move(text_right), std::move(transform_right));
+			m_ecs.AddComponents(e_right, std::move(platform_right), std::move(text_right), std::move(transform_right), std::move(collider), Plateform{});
 		}
 
 		{
@@ -323,9 +362,13 @@ struct GameScene : public IGameScene
 			controlComponentPlayer player_input;
 			playerComponent player_comp;
 
+			PhysicComponent gravity;
+			CollisionComp collider;
+			collider.collider = &ColliderManager::Load("playerCollider", player.mesh);
+
 			auto e_player = m_ecs.CreateEntity();
 
-			m_ecs.AddComponents(e_player, std::move(player), std::move(text_player), std::move(transform_player),std::move(player_input),std::move(player_comp));
+			m_ecs.AddComponents(e_player, std::move(player), std::move(text_player), std::move(transform_player),std::move(player_input),std::move(player_comp), std::move(gravity), std::move(collider));
 		}
 
 		// light
@@ -337,6 +380,49 @@ struct GameScene : public IGameScene
 			TransformComponent transform;
 			transform.SetPosition({ 0,5,0 });
 			transform.LookAtDir({ 0,-1,0 });
+			// same 
+			auto e = m_ecs.CreateEntity();
+			// same
+			m_ecs.AddComponents(e, std::move(lc), std::move(transform));
+		}
+
+		// light
+		{
+			// the light need transform component and light component
+			// all lights type have their own system to create them go in the file to understand
+			LightComponent<LightData::Type::Directional> lc = LightComponent<LightData::Type::Directional>::Create({ 1,1,1 }, { 1,1,1 }, 100.0f);
+			// set the transform but certain light need dir some position or both so just use what necessary 
+			TransformComponent transform;
+			transform.SetPosition({ 0,5,0 });
+			transform.LookAtDir({ 0,1,0 });
+			// same 
+			auto e = m_ecs.CreateEntity();
+			// same
+			m_ecs.AddComponents(e, std::move(lc), std::move(transform));
+		}
+		// light
+		{
+			// the light need transform component and light component
+			// all lights type have their own system to create them go in the file to understand
+			LightComponent<LightData::Type::Directional> lc = LightComponent<LightData::Type::Directional>::Create({ 1,1,1 }, { 1,1,1 }, 100.0f);
+			// set the transform but certain light need dir some position or both so just use what necessary 
+			TransformComponent transform;
+			transform.SetPosition({ 0,5,0 });
+			transform.LookAtDir({ 1,0,0 });
+			// same 
+			auto e = m_ecs.CreateEntity();
+			// same
+			m_ecs.AddComponents(e, std::move(lc), std::move(transform));
+		}
+		// light
+		{
+			// the light need transform component and light component
+			// all lights type have their own system to create them go in the file to understand
+			LightComponent<LightData::Type::Directional> lc = LightComponent<LightData::Type::Directional>::Create({ 1,1,1 }, { 1,1,1 }, 100.0f);
+			// set the transform but certain light need dir some position or both so just use what necessary 
+			TransformComponent transform;
+			transform.SetPosition({ 0,5,0 });
+			transform.LookAtDir({ -1,0,0 });
 			// same 
 			auto e = m_ecs.CreateEntity();
 			// same
@@ -376,7 +462,10 @@ struct GameScene : public IGameScene
 			{
 				auto input = m_window->GetInputManager();
 				auto camView = m_ecs.GetAllComponentsView<CameraComponent, TransformComponent>();
+				auto& transform = m_ecs.GetComponent<TransformComponent>(e);
 				auto& playerComp = m_ecs.GetComponent<playerComponent>(e);
+				auto& gravity = m_ecs.GetComponent<PhysicComponent>(e);
+				auto& colision = m_ecs.GetComponent<CollisionComp>(e);
 
 				switch (playerComp.StartDir)
 				{
@@ -577,6 +666,8 @@ struct GameScene : public IGameScene
 					break;
 				}
 
+
+
 				glm::vec3 camTargetPos = { 0,0,0 };
 				glm::vec3 camTargetLook = { 0,0,0 };
 
@@ -588,12 +679,12 @@ struct GameScene : public IGameScene
 					{
 					case DirectionState::BAS:
 						camTargetPos = { 0,5,7 };
-						camTargetLook = { 0, -10, 0 };
+						camTargetLook = { 0, -3, 0 };
 						break;
 
 					case DirectionState::HAUT:
-						camTargetPos = { 0,-5,7 };
-						camTargetLook = { 0, 10, 0 };
+						camTargetPos = { 0,2,7 };
+						camTargetLook = { 0, 3, 0 };
 						break;
 
 					case DirectionState::GAUCHE:
@@ -612,10 +703,88 @@ struct GameScene : public IGameScene
 
 					camTransform.SetPosition(camCurrentPos);
 					camTransform.LookAt(camCurrentLook);
+
+					///////////////////////////////////////////////////////////////////////////////
+					glm::vec3 dir(0.0f);
+			
+					switch (playerComp.StartDir)
+					{
+					case DirectionState::BAS: dir = { 0,-1,0 }; break;
+					case DirectionState::HAUT: dir = { 0,1,0 }; break;
+					case DirectionState::GAUCHE: dir = { -1,0,0 }; break;
+					case DirectionState::DROITE: dir = { 1,0,0 }; break;
+					}
+
+
+					if (input->IsKeyDown(KGR::Key::Z))
+						gravity.jump();
+
+					gravity.uptadePhysique(dt);
+					glm::vec3 move = dir * gravity.getVelocity() * dt;
+					transform.Translate(move);
+
+					auto boxOBB = colision.collider->ComputeGlobalOBB(
+						transform.GetScale(), transform.GetPosition(), transform.GetOrientation());
+
+					gravity.setIsGround(false);
+
+					auto plateforms = m_ecs.GetAllComponentsView<Plateform, TransformComponent, CollisionComp>();
+					for (auto p : plateforms)
+					{
+						auto& tP = m_ecs.GetComponent<TransformComponent>(p);
+						auto& colP = m_ecs.GetComponent<CollisionComp>(p);
+
+						auto pOBB = colP.collider->ComputeGlobalOBB(
+							tP.GetScale(), tP.GetPosition(), tP.GetOrientation());
+
+						auto collision = KGR::SeparatingAxisTheorem::CheckCollisionOBB3D(boxOBB, pOBB);
+						if (collision.IsColliding())
+						{
+							transform.Translate(-move);
+							gravity.resetVelocity();
+							gravity.setIsGround(true);
+						}
+					}
 				}
 			}
 
 		}
+		////////////////////////////////////////////////////////////////////
+
+		spawnTimer += dt;
+		if (spawnTimer >= spawnInterval)
+		{
+			spawnTimer = 0.0f;
+			spawnObstacle();
+		}
+
+		glm::vec3 playerPos(0.0f);
+		auto playerView = m_ecs.GetAllComponentsView<playerComponent, TransformComponent>();
+		for (auto& player : playerView)
+			playerPos = m_ecs.GetComponent<TransformComponent>(player).GetPosition();
+		std::vector<decltype(m_ecs.CreateEntity())> toDestroy;
+
+		auto obsView = m_ecs.GetAllComponentsView<Obstacle, TransformComponent>();
+
+		for (auto obstacle : obsView)
+		{
+			auto& obsTransform = m_ecs.GetComponent<TransformComponent>(obstacle);
+			auto& obs = m_ecs.GetComponent<Obstacle>(obstacle);
+			auto& obsCol = m_ecs.GetComponent<CollisionComp>(obstacle);
+
+			obsTransform.Translate({ 0.0f, 0.0f, obs.velocityObstacle * dt });
+
+			if (obsTransform.GetPosition().z > 10.0f)
+			{
+				toDestroy.push_back(obstacle);
+				continue;
+			}
+		}
+
+		for (auto& obstacle : toDestroy)
+			m_ecs.DestroyEntity(obstacle);
+
+
 		{
 			auto input = m_window->GetInputManager();
 			if (input->IsKeyDown(KGR::Key::P))
@@ -645,6 +814,47 @@ struct GameScene : public IGameScene
 	void Render() override
 	{
 		IGameScene::Render();
+	}
+
+	void spawnObstacle()
+	{
+		float lanesX[3] = { -1.3f, 0.0f, 1.3f };
+		float lanesY[3] = { 1.2f, 2.5f, 3.8f };
+
+		auto spawn = [&](glm::vec3 position)
+		{
+			MeshComponent mesh;
+			mesh.mesh = &MeshLoader::Load("Models/cube.obj", m_window->App());
+
+			MaterialComponent material;
+			material.materials.resize(mesh.mesh->GetSubMeshesCount());
+
+
+			for (int i = 0; i < mesh.mesh->GetSubMeshesCount(); ++i)
+			{
+				Material mat;
+				mat.baseColor = &TextureLoader::Load("Textures/test_mat_bc.png", m_window->App());
+
+				material.materials[i] = mat;
+			}
+
+			TransformComponent transform;
+			transform.SetPosition(position);
+			transform.SetScale({ 0.8, 0.8, 0.8 });
+
+			CollisionComp collider;
+			std::string nameCollision = "obstacle_" + std::to_string(obstacleCount++);
+
+			collider.collider = &ColliderManager::Load(nameCollision, mesh.mesh);
+
+			auto e = m_ecs.CreateEntity();
+			m_ecs.AddComponents(e, std::move(mesh), std::move(material), std::move(transform), std::move(collider), Obstacle{});
+		};
+
+		spawn({ lanesX[rand() % 3],  0.0f, -20.0f });
+		spawn({ lanesX[rand() % 3],   6.0f, -20.0f });
+		spawn({ -7.0f, lanesY[rand() % 3], -20.0f });
+		spawn({ 7.0f, lanesY[rand() % 3], -20.0f });
 	}
 };
 
@@ -730,4 +940,7 @@ struct MenuScene : public IGameScene
 			}
 		}
 	}
+
+
 };
+
