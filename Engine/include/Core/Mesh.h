@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 
 #include "Buffer.h"
+#include "DescriptorSet.h"
 #include "RessourcesManager.h"
 #include "Vertex.h"
 
@@ -95,7 +96,7 @@ public:
 
     friend KGR::_Vulkan::VulkanCore;
 
-    Mesh() = default;
+    Mesh();
 
     /// @brief Returns the number of submeshes.
     uint32_t GetSubMeshesCount() const;
@@ -131,6 +132,9 @@ private:
      * @param index Index of the submesh to bind.
      */
     void Bind(const vk::raii::CommandBuffer* buffer, uint32_t index);
+
+    KGR::_Vulkan::Buffer m_transformBuffer;
+    KGR::_Vulkan::DescriptorSet m_transformSet;
 };
 
 

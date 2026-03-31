@@ -19,6 +19,9 @@ struct Transform
     float4x4 model;
 }
 
+[[vk::binding(0, 6)]]
+StructuredBuffer<Transform> instanceTransforms;
+
 struct Data
 {
     UniformBuffer CamUbo;
@@ -27,7 +30,7 @@ struct Data
 ParameterBlock<Data> data;
 
 [[vk::push_constant()]]
-ConstantBuffer<Transform> pushConstantData;
+ConstantBuffer<Transform> pushConstantDataaaa;
 
 struct VSOutput
 {
@@ -43,10 +46,12 @@ struct VSOutput
 
 
 [shader("vertex")]
-VSOutput vertMain(VSInput input) {
+VSOutput vertMain(VSInput input, uint instance : SV_StartInstanceLocation) {
     VSOutput output;
 
-    float4 wsPos = mul(pushConstantData.model, float4(input.inPosition, 1.0f));
+    float4x4 currentModel = instanceTransforms.Load(instance).model;
+
+    float4 wsPos = mul(currentModel, float4(input.inPosition, 1.0f));
     output.pos = mul(data.CamUbo.proj, mul(data.CamUbo.view, wsPos));
     output.worldspacePosition = wsPos.xyz;
     output.eyePos = mul(data.CamUbo.InverseView, float4(0.0f.xxx, 1.0f)).xyz;
@@ -54,10 +59,10 @@ VSOutput vertMain(VSInput input) {
     output.fragColor = input.inColor;
     //output.normal =  mul(pushConstantData.model, float4(input.normal, 0.0f)).xyz;
 
-    // normal to ws 
-    float3 N = normalize(mul(pushConstantData.model, float4(input.normal, 0.0f)).xyz);
-    // tangeant to ws 
-    float3 T = normalize(mul(pushConstantData.model, float4(input.Tangeant.xyz, 0.0f)).xyz);
+    // normal to ws
+    float3 N = normalize(mul(currentModel, float4(input.normal, 0.0f)).xyz);
+    // tangeant to ws
+    float3 T = normalize(mul(currentModel, float4(input.Tangeant.xyz, 0.0f)).xyz);
     // prosses bi tengeant * 1.0f
     float3 B = cross(N, T) * input.Tangeant.w;
 

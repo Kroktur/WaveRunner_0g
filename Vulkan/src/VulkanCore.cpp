@@ -93,16 +93,21 @@ void KGR::_Vulkan::VulkanCore::initVulkan(GLFWwindow* window)
 	std::vector<vk::DescriptorSetLayoutBinding> bindings7 = {
 				vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr)
 	};
+	std::vector<vk::DescriptorSetLayoutBinding> bindings8 = {
+				vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr)
+	};
 	auto layout3 = DescriptorLayout(bindings3, &device);
 	auto layout4 = DescriptorLayout(bindings3, &device);
 	auto layout5 = DescriptorLayout(bindings4, &device);
 	auto layout6 = DescriptorLayout(bindings5, &device);
 	auto layout7 = DescriptorLayout(bindings6, &device);
 	auto layout8 = DescriptorLayout(bindings7, &device);
+	auto layout9 = DescriptorLayout(bindings8, &device);
 	descriptorSetLayout.Add(std::move(layout3));
 	descriptorSetLayout.Add(std::move(layout5));
 	descriptorSetLayout.Add(std::move(layout6));
 	descriptorSetLayout.Add(std::move(layout7));
+	descriptorSetLayout.Add(std::move(layout9));
 
 	uiLayout.Add(std::move(layout4));
 	uiLayout.Add(std::move(layout8));
@@ -148,6 +153,11 @@ void KGR::_Vulkan::VulkanCore::initVulkan(GLFWwindow* window)
 	bufferD3.MapMemory(bufferSize3);
 	m_lightCount = std::move(bufferD3);
 
+	vk::DeviceSize bufferSize4 = (StorageContainer < glm::mat4, 5000 >::Capacity());
+	auto bufferD4 = Buffer(&device, &physicalDevice, vk::BufferUsageFlagBits::eStorageBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, bufferSize4);
+	bufferD4.MapMemory(bufferSize4);
+	m_transformBuffer = std::move(bufferD4);
+
 	// descriptorPool
 	std::vector<vk::DescriptorPoolSize> poolSize{
 				vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 2),
@@ -159,7 +169,7 @@ void KGR::_Vulkan::VulkanCore::initVulkan(GLFWwindow* window)
 	// DescriptorSet
 	descriptorSets = DescriptorSet(&device, &descriptorPool, &descriptorSetLayout.Get(0));
 	m_LightSet = DescriptorSet(&device, &descriptorPool, &descriptorSetLayout.Get(1));
-
+	m_transformSet = DescriptorSet(&device, &descriptorPool, &descriptorSetLayout.Get(6));
 	vk::DescriptorBufferInfo bufferInfo{
 		.buffer = uniformBuffers.Get(),
 		.offset = 0,
@@ -172,6 +182,10 @@ void KGR::_Vulkan::VulkanCore::initVulkan(GLFWwindow* window)
 		.buffer = m_lightCount.Get(),
 		.offset = 0,
 		.range = m_lightCount.GetSize() };
+	vk::DescriptorBufferInfo bufferInfo4{
+	.buffer = m_transformBuffer.Get(),
+	.offset = 0,
+	.range = m_transformBuffer.GetSize() };
 	std::array descriptorWrites
 	{
 		vk::WriteDescriptorSet{
@@ -188,6 +202,13 @@ void KGR::_Vulkan::VulkanCore::initVulkan(GLFWwindow* window)
 				.descriptorCount = 1,
 				.descriptorType = vk::DescriptorType::eStorageBuffer,
 				.pBufferInfo = &bufferInfo2},
+		vk::WriteDescriptorSet{
+				.dstSet = m_transformSet.Get(),
+				.dstBinding = 0,
+				.dstArrayElement = 0,
+				.descriptorCount = 1,
+				.descriptorType = vk::DescriptorType::eStorageBuffer,
+				.pBufferInfo = &bufferInfo4},
 				vk::WriteDescriptorSet{
 					.dstSet = m_LightSet.Get(),
 					.dstBinding = 1,
@@ -387,7 +408,7 @@ void KGR::_Vulkan::VulkanCore::RenderSceneToOffscreen(KGR::Editor::Offscreen& ta
 		{
 			it.mesh->Bind(cmd, i);
 			cmd->pushConstants<glm::mat4>(
-				graphicsPipeline.GetLayout(), vk::ShaderStageFlagBits::eVertex, 0, it.matrixModel);
+				graphicsPipeline.GetLayout(), vk::ShaderStageFlagBits::eVertex, 0, glm::mat4{});
 			cmd->bindDescriptorSets(
 				vk::PipelineBindPoint::eGraphics, graphicsPipeline.GetLayout(), 0, *descriptorSets.Get(), nullptr);
 			cmd->bindDescriptorSets(
@@ -781,7 +802,15 @@ void KGR::_Vulkan::VulkanCore::RegisterRender(Mesh& mesh, const  glm::mat4& mode
 {
 	if (texture.size() != mesh.GetSubMeshesCount())
 		throw std::out_of_range("need same amount of subMeshes and texture");
-	m_toRenderObject.push_back(MeshData{ model ,&mesh,texture });
+	for (auto& e : m_toRenderObject)
+	{
+		if (IsSameMesh(&mesh, texture, e.mesh, e.texture))
+		{
+			e.matrixModels.push_back(model);
+			return;
+		}
+	}
+	m_toRenderObject.push_back(MeshData{ {model},&mesh,texture });
 }
 
 void KGR::_Vulkan::VulkanCore::RegisterUi(const UiData& data, Texture* texture,const glm::vec2& screenSize, Texture* whiteTexture)
@@ -832,6 +861,7 @@ void KGR::_Vulkan::VulkanCore::Render(GLFWwindow* window, const glm::vec4& color
 	// Pass a neutral clear colour so we don't see the scene painted twice.
 	glm::vec4 swapchainClear = offscreen ? glm::vec4(0.0f, 0.0f, 0.0f, 1.0f) : color;
 
+	
 	int result = BeginRendering(window, currentBuffer, &graphicsPipeline, swapchainClear);
 	if (result == -1)
 	{
@@ -846,25 +876,65 @@ void KGR::_Vulkan::VulkanCore::Render(GLFWwindow* window, const glm::vec4& color
 	// Legacy path: no offscreen target → draw the scene to the swapchain directly.
 	if (!offscreen)
 	{
-		currentBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, *graphicsPipeline.Get());
+		std::vector<glm::mat4 > totalModels;
+		for (auto& it : m_toRenderObject)
+			for (auto& mat : it.matrixModels)
+				totalModels.push_back(mat);
 
+		StorageContainer < glm::mat4, 5000 > transformData = StorageContainer < glm::mat4, 5000 >::FromVec(totalModels);
+		m_transformBuffer.Upload(transformData.Data(), transformData.UploadSize());
+
+
+		currentBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, *graphicsPipeline.Get());
+		currentBuffer->bindDescriptorSets(
+			vk::PipelineBindPoint::eGraphics, graphicsPipeline.GetLayout(), 0, *descriptorSets.Get(), nullptr);
+		currentBuffer->bindDescriptorSets(
+			vk::PipelineBindPoint::eGraphics, graphicsPipeline.GetLayout(), 1, *m_LightSet.Get(), nullptr);
+		currentBuffer->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipeline.GetLayout(), 6, *m_transformSet.Get(), nullptr);
+
+		Texture* lastbaseColor = nullptr;
+		Texture* lastpbrMap	   = nullptr;
+		Texture* lastemissive  = nullptr;
+		Texture* lastnormalMap = nullptr;
+
+		
+
+
+		size_t instanceIndex = 0;
 		for (auto& it : m_toRenderObject)
 		{
 			for (int i = 0; i < it.mesh->GetSubMeshesCount(); ++i)
 			{
 				it.mesh->Bind(currentBuffer, i);
 				currentBuffer->pushConstants<glm::mat4>(
-					graphicsPipeline.GetLayout(), vk::ShaderStageFlagBits::eVertex, 0, it.matrixModel);
-				currentBuffer->bindDescriptorSets(
-					vk::PipelineBindPoint::eGraphics, graphicsPipeline.GetLayout(), 0, *descriptorSets.Get(), nullptr);
-				currentBuffer->bindDescriptorSets(
-					vk::PipelineBindPoint::eGraphics, graphicsPipeline.GetLayout(), 1, *m_LightSet.Get(), nullptr);
-				it.texture.at(i).baseColor->Bind(currentBuffer, &graphicsPipeline.GetLayout(), 2);
-				it.texture.at(i).pbrMap->Bind(currentBuffer, &graphicsPipeline.GetLayout(), 3);
-				it.texture.at(i).emissive->Bind(currentBuffer, &graphicsPipeline.GetLayout(), 4);
-				it.texture.at(i).normalMap->Bind(currentBuffer, &graphicsPipeline.GetLayout(), 5);
-				currentBuffer->drawIndexed(it.mesh->GetSubMesh(i).IndexCount(), 1, 0, 0, 0);
+					graphicsPipeline.GetLayout(), vk::ShaderStageFlagBits::eVertex, 0, glm::mat4{});
+
+				if (lastbaseColor != it.texture.at(i).baseColor)
+				{
+					it.texture.at(i).baseColor->Bind(currentBuffer, &graphicsPipeline.GetLayout(), 2);
+					lastbaseColor = it.texture.at(i).baseColor;
+				}
+
+				if (lastpbrMap != it.texture.at(i).pbrMap)
+				{
+					it.texture.at(i).pbrMap->Bind(currentBuffer, &graphicsPipeline.GetLayout(), 3);
+					lastpbrMap = it.texture.at(i).pbrMap;
+				}
+
+				if (lastemissive != it.texture.at(i).emissive)
+				{
+					it.texture.at(i).emissive->Bind(currentBuffer, &graphicsPipeline.GetLayout(), 4);
+					lastemissive = it.texture.at(i).emissive;
+				}
+
+				if (lastnormalMap != it.texture.at(i).normalMap)
+				{
+					it.texture.at(i).normalMap->Bind(currentBuffer, &graphicsPipeline.GetLayout(), 5);
+					lastnormalMap = it.texture.at(i).normalMap;
+				}
+				currentBuffer->drawIndexed(it.mesh->GetSubMesh(i).IndexCount(), it.matrixModels.size(), 0, 0, static_cast<uint32_t>(instanceIndex));
 			}
+			instanceIndex += it.matrixModels.size() ;
 		}
 	}
 	//currentBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, *linePipeLine.Get());

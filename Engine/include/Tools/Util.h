@@ -170,7 +170,7 @@ struct StorageContainer
     /**
      * @brief Returns the total memory capacity in bytes.
      */
-    static uint32_t Capacity()
+    static size_t Capacity()
     {
         return sizeof(type) * maxCount;
     }
@@ -204,7 +204,7 @@ struct StorageContainer
     /**
      * @brief Returns a pointer to the size value (useful for GPU uploads).
      */
-    uint32_t* GetSizeData()
+    size_t* GetSizeData()
     {
         return &size;
     }
@@ -212,12 +212,12 @@ struct StorageContainer
     /**
      * @brief Returns a const pointer to the size value.
      */
-    const uint32_t* GetSizeData() const
+    const size_t* GetSizeData() const
     {
         return &size;
     }
 
 private:
-    uint32_t size = 0;       ///< Number of used elements.
+    size_t size = 0;       ///< Number of used elements.
     type tab[maxCount];      ///< Static storage array.
 };

@@ -61,6 +61,10 @@ void SubMeshes::BindIndices(const vk::raii::CommandBuffer* buffer)
 	buffer->bindIndexBuffer(*m_indexBuffer.Get(), 0, vk::IndexType::eUint32);
 }
 
+Mesh::Mesh()
+{
+
+}
 
 
 uint32_t Mesh::GetSubMeshesCount() const

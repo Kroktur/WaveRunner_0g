@@ -47,7 +47,7 @@ struct MeshData
 	/**
 	 * @brief Model transformation matrix.
 	 */
-	glm::mat4 matrixModel;
+	std::vector<glm::mat4> matrixModels;
 
 	/**
 	 * @brief Pointer to mesh object.
@@ -59,6 +59,25 @@ struct MeshData
 	 */
 	std::vector<Material> texture;
 };
+
+static bool IsSameMat(const std::vector<Material>& lhs, const std::vector<Material>& rhs)
+{
+	if (lhs.size() != rhs.size())
+		return false;
+	for (int i = 0; i< lhs.size() ; ++i)
+	{
+		if (lhs[i] != rhs[i])
+			return false;
+	}
+	return true;
+}
+
+static bool IsSameMesh(Mesh* lhsMesh, const std::vector<Material>& lhsMats,Mesh* rhsMesh, const std::vector<Material>& rhsMats)
+{
+	if (lhsMesh != rhsMesh)
+		return false;
+	return IsSameMat(lhsMats, rhsMats);
+}
 
 /**
  * @brief Struct representing a line segment for debug rendering.
@@ -283,6 +302,8 @@ namespace KGR
 			DescriptorSet m_LightSet;
 			Buffer m_lightBuffer;
 			Buffer m_lightCount;
+			Buffer m_transformBuffer;
+			DescriptorSet m_transformSet;
 			std::optional<UniformBufferObject> m_ubo;
 			std::vector<MeshData> m_toRenderObject;
 			std::vector<UiDataGPU> uIRender;

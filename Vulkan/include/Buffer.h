@@ -85,7 +85,7 @@ namespace KGR
 			 * @param data Pointer to the source data.
 			 * @param size Size of the data in bytes.
 			 */
-			void Upload(const void* data, size_t size);
+			void Upload(const void* data, size_t size,size_t offset = 0);
 
 			/**
 			 * @brief Copies the content of another buffer into this buffer.

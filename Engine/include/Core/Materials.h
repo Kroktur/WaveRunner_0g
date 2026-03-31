@@ -7,6 +7,14 @@ struct Material
 	Texture* emissive = nullptr;
 	Texture* normalMap = nullptr;
 	Texture* pbrMap = nullptr;
+	bool operator==(const Material& other) const
+	{
+		return baseColor == other.baseColor && emissive == other.emissive && normalMap == other.normalMap && pbrMap == other.pbrMap;
+	}
+	bool operator!=(const Material& other) const
+	{
+		return !(*this == other);
+	}
 };
 
 

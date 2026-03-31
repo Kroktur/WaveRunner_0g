@@ -22,13 +22,13 @@ KGR::_Vulkan::Buffer::Buffer(Device* device, PhysicalDevice* phDevice,
 	createBuffer(m_size,  usage, MemoryProperties, m_buffer, m_bufferMemory, device, phDevice);
 }
 
-void KGR::_Vulkan::Buffer::Upload(const void* data, size_t size)
+void KGR::_Vulkan::Buffer::Upload(const void* data, size_t size,size_t offset)
 {	
 	if (!dest)
 		throw std::runtime_error("Buffer not mapped");
-	if (size > m_size)
+	if (offset + size > m_size)
 		throw std::out_of_range("impossible to upload");
-	std::memcpy(dest, data, (size_t)size);
+	std::memcpy(static_cast<char*>(dest) + offset, data, (size_t)size);
 }
 
 

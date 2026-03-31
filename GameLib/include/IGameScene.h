@@ -181,7 +181,49 @@ struct GameScene : public IGameScene
 			// now move the component into the ecs
 			m_ecs.AddComponents(e, std::move(cam), std::move(transform));
 		}
+
+
 		
+		
+		for (int i = 0 ; i < 700; ++i)
+		{
+			// a mesh need a meshComponent a transform and a texture 
+
+			// create a mesh and load it with the cash loader
+			MeshComponent mesh;
+			mesh.mesh = &MeshLoader::Load("Models/CUBE.obj", m_window->App());
+
+			// create a texture 
+			MaterialComponent text;
+			// allocate the size of the texture must be the same as the number of submeshes 
+			text.materials.resize(mesh.mesh->GetSubMeshesCount());
+			// then fill the texture ( this system need to be refact but for now you need to do it like that
+			for (int i = 0; i < mesh.mesh->GetSubMeshesCount(); ++i)
+			{
+				Material mat;
+				mat.baseColor = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", m_window->App());
+				mat.emissive = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", m_window->App());
+				mat.normalMap = &TextureLoader::Load("Textures/bloc_Normal.png", m_window->App());
+				mat.pbrMap = &TextureLoader::Load("Textures/bloc_ORM.png", m_window->App());
+
+
+
+
+
+				text.materials[i] = mat;
+			}
+
+			// create the transform and set all the data
+			TransformComponent transform;
+			transform.SetPosition({ 0,0,0 });
+			transform.SetScale({ 3.0f, 3.0f,3.0f });
+			// same create an entity / id
+			auto e = m_ecs.CreateEntity();
+			// fill the component
+			m_ecs.AddComponents(e, std::move(mesh), std::move(text), std::move(transform));
+		}
+
+
 		{
 			// a mesh need a meshComponent a transform and a texture 
 
@@ -216,7 +258,7 @@ struct GameScene : public IGameScene
 			// same create an entity / id
 			auto e = m_ecs.CreateEntity();
 			// fill the component
-			m_ecs.AddComponents(e, std::move(mesh), std::move(text), std::move(transform),std::move(control{}));
+			m_ecs.AddComponents(e, std::move(mesh), std::move(text), std::move(transform), std::move(control{}));
 		}
 
 
