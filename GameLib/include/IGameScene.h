@@ -233,7 +233,7 @@ struct GameScene : public IGameScene
 			for (int i = 0; i < platform_down.mesh->GetSubMeshesCount(); ++i)
 			{
 				Material mat_down;
-				mat_down.baseColor = &TextureLoader::Load("Textures/test_mat_bc.png", m_window->App());
+				mat_down.baseColor = &TextureLoader::Load("Textures/H1_H2_bloc_BaseColor_Emissive.png", m_window->App());
 
 				text_down.materials[i] = mat_down;
 			}
@@ -262,7 +262,7 @@ struct GameScene : public IGameScene
 			for (int i = 0; i < platform_up.mesh->GetSubMeshesCount(); ++i)
 			{
 				Material mat_up;
-				mat_up.baseColor = &TextureLoader::Load("Textures/test_mat_bc.png", m_window->App());
+				mat_up.baseColor = &TextureLoader::Load("Textures/H1_H2_bloc_BaseColor_Emissive.png", m_window->App());
 
 				text_up.materials[i] = mat_up;
 			}
@@ -291,7 +291,7 @@ struct GameScene : public IGameScene
 			for (int i = 0; i < platform_left.mesh->GetSubMeshesCount(); ++i)
 			{
 				Material mat_left;
-				mat_left.baseColor = &TextureLoader::Load("Textures/test_mat_bc.png", m_window->App());
+				mat_left.baseColor = &TextureLoader::Load("Textures/H1_H2_bloc_BaseColor_Emissive.png", m_window->App());
 
 				text_left.materials[i] = mat_left;
 			}
@@ -321,7 +321,7 @@ struct GameScene : public IGameScene
 			for (int i = 0; i < platform_right.mesh->GetSubMeshesCount(); ++i)
 			{
 				Material mat_right;
-				mat_right.baseColor = &TextureLoader::Load("Textures/test_mat_bc.png", m_window->App());
+				mat_right.baseColor = &TextureLoader::Load("Textures/H1_H2_bloc_BaseColor_Emissive.png", m_window->App());
 
 				text_right.materials[i] = mat_right;
 			}
@@ -351,7 +351,7 @@ struct GameScene : public IGameScene
 			for (int i = 0; i < player.mesh->GetSubMeshesCount(); ++i)
 			{
 				Material mat_player;
-				mat_player.baseColor = &TextureLoader::Load("Textures/test_mat_bc.png", m_window->App());
+				mat_player.baseColor = &TextureLoader::Load("Textures/H1_H2_bloc_BaseColor_Emissive.png", m_window->App());
 
 				text_player.materials[i] = mat_player;
 			}
@@ -816,45 +816,58 @@ struct GameScene : public IGameScene
 		IGameScene::Render();
 	}
 
+	void spawn(glm::vec3 position, const std::string& meshPath, const std::string& texturePath)
+	{
+		MeshComponent mesh;
+		mesh.mesh = &MeshLoader::Load(meshPath, m_window->App());
+
+		MaterialComponent material;
+		material.materials.resize(mesh.mesh->GetSubMeshesCount());
+
+
+		for (int i = 0; i < mesh.mesh->GetSubMeshesCount(); ++i)
+		{
+			Material mat;
+			mat.baseColor = &TextureLoader::Load(texturePath, m_window->App());
+
+			material.materials[i] = mat;
+		}
+
+		TransformComponent transform;
+		transform.SetPosition(position);
+		transform.SetScale({ 0.8, 0.8, 0.8 });
+
+		CollisionComp collider;
+		std::string nameCollision = "obstacle_" + std::to_string(obstacleCount++);
+
+		collider.collider = &ColliderManager::Load(nameCollision, mesh.mesh);
+
+		auto e = m_ecs.CreateEntity();
+		m_ecs.AddComponents(e, std::move(mesh), std::move(material), std::move(transform), std::move(collider), Obstacle{});
+	};
+
 	void spawnObstacle()
 	{
 		float lanesX[3] = { -1.3f, 0.0f, 1.3f };
 		float lanesY[3] = { 1.2f, 2.5f, 3.8f };
 
-		auto spawn = [&](glm::vec3 position)
+		std::vector<std::pair<std::string, std::string>> mesh =
 		{
-			MeshComponent mesh;
-			mesh.mesh = &MeshLoader::Load("Models/cube.obj", m_window->App());
-
-			MaterialComponent material;
-			material.materials.resize(mesh.mesh->GetSubMeshesCount());
-
-
-			for (int i = 0; i < mesh.mesh->GetSubMeshesCount(); ++i)
-			{
-				Material mat;
-				mat.baseColor = &TextureLoader::Load("Textures/test_mat_bc.png", m_window->App());
-
-				material.materials[i] = mat;
-			}
-
-			TransformComponent transform;
-			transform.SetPosition(position);
-			transform.SetScale({ 0.8, 0.8, 0.8 });
-
-			CollisionComp collider;
-			std::string nameCollision = "obstacle_" + std::to_string(obstacleCount++);
-
-			collider.collider = &ColliderManager::Load(nameCollision, mesh.mesh);
-
-			auto e = m_ecs.CreateEntity();
-			m_ecs.AddComponents(e, std::move(mesh), std::move(material), std::move(transform), std::move(collider), Obstacle{});
+			 {"Models/cube.obj", "Textures/test_mat_bc.png"}
+			,{ "Models/all_obstacle.obj", "Textures/test_mat_bc.png"}
+			,{"Models/bloc_L1_H1.obj", "Textures/test_mat_bc.png"}
 		};
+		
 
-		spawn({ lanesX[rand() % 3],  0.0f, -20.0f });
-		spawn({ lanesX[rand() % 3],   6.0f, -20.0f });
-		spawn({ -7.0f, lanesY[rand() % 3], -20.0f });
-		spawn({ 7.0f, lanesY[rand() % 3], -20.0f });
+		int randomMeshBas = rand() % mesh.size();
+		int randomMeshHaut = rand() % mesh.size();
+		int randomMeshDroite = rand() % mesh.size();
+		int randomMeshGauche = rand() % mesh.size();
+
+		spawn({ lanesX[rand() % 3],  0.0f, -20.0f }, mesh[randomMeshBas].first, mesh[randomMeshBas].second);
+		spawn({ lanesX[rand() % 3],   6.0f, -20.0f }, mesh[randomMeshHaut].first, mesh[randomMeshHaut].second);
+		spawn({ -7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshGauche].first, mesh[randomMeshGauche].second);
+		spawn({ 7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshDroite].first, mesh[randomMeshDroite].second);
 	}
 };
 
