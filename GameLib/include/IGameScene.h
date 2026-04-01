@@ -28,9 +28,12 @@ glm::vec3 camCurrentPos = { 0,8,15 };
 glm::vec3 camCurrentLook = { 0,-10, 0 };
 float smoothCamSpeed = 2.0f;
 
+glm::vec3 PlayerCurrentPos = { 0,0,2 };
+float smoothPlayerSpeed = 6.0f;
+
 struct controlComponentPlayer
 {
-
+	glm::vec3 PlayerTargetPos = { 0.0f, 0.0f, 2.0f };
 };
 
 enum class DirectionState
@@ -317,7 +320,7 @@ struct GameScene : public IGameScene
 				text_player.materials[i] = mat_player;
 			}
 			TransformComponent transform_player;
-			transform_player.SetPosition({ 0,0,2 });
+			transform_player.SetPosition({ 0.0f, 0.0f, 2.0f });
 			transform_player.SetScale({ 1.0f,1.0f,1.0f });
 
 			controlComponentPlayer player_input;
@@ -372,8 +375,12 @@ struct GameScene : public IGameScene
 
 		{
 			auto es = m_ecs.GetAllComponentsView<TransformComponent, controlComponentPlayer>();
+
+
 			for (auto& e : es)
 			{
+				glm::vec3& PlayerTargetPos = m_ecs.GetComponent<controlComponentPlayer>(e).PlayerTargetPos;
+
 				auto input = m_window->GetInputManager();
 				auto camView = m_ecs.GetAllComponentsView<CameraComponent, TransformComponent>();
 				auto& playerComp = m_ecs.GetComponent<playerComponent>(e);
@@ -384,17 +391,17 @@ struct GameScene : public IGameScene
 					if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
 						playerComp.StartDir = DirectionState::HAUT;
 						playerComp.StartPos = PositionState::CENTRE;
-						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 0.0f,5.0f,2.0f });
+						PlayerTargetPos = { 0.0f,5.0f,2.0f };
 					}
 					if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
 						playerComp.StartDir = DirectionState::GAUCHE;
 						playerComp.StartPos = PositionState::CENTRE;
-						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ -6.0f,2.5f,2.0f });
+						PlayerTargetPos = { -6.0f,2.5f,2.0f };
 					}
 					if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
 						playerComp.StartDir = DirectionState::DROITE;
 						playerComp.StartPos = PositionState::CENTRE;
-						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 6.0f,2.5f,2.0f });
+						PlayerTargetPos = { 6.0f,2.5f,2.0f };
 					}
 
 					switch (playerComp.StartPos)
@@ -402,31 +409,31 @@ struct GameScene : public IGameScene
 					case PositionState::CENTRE:
 						if (input->IsKeyPressed(KGR::Key::Q)) {
 							playerComp.StartPos = PositionState::GAUCHE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ -1.30f, 0.0f, 2.0f });
+							PlayerTargetPos = { -1.30f, 0.0f, 2.0f };
 						}
 						if (input->IsKeyPressed(KGR::Key::A)) {
 							playerComp.StartPos = PositionState::GAUCHE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ -1.30f, 0.0f, 2.0f });
+							PlayerTargetPos = { -1.30f, 0.0f, 2.0f };
 						}
 						if (input->IsKeyPressed(KGR::Key::D)) {
 							playerComp.StartPos = PositionState::DROITE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 1.30f, 0.0f, 2.0 });
+							PlayerTargetPos = { 1.30f, 0.0f, 2.0 };
 						}
 						break;
 					case PositionState::GAUCHE:
 						if (input->IsKeyPressed(KGR::Key::D)) {
 							playerComp.StartPos = PositionState::CENTRE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 0.0f, 0.0f, 2.0f });
+							PlayerTargetPos = { 0.0f, 0.0f, 2.0f };
 						}
 						break;
 					case PositionState::DROITE:
 						if (input->IsKeyPressed(KGR::Key::Q)) {
 							playerComp.StartPos = PositionState::CENTRE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 0.0f, 0.0f, 2.0f });
+							PlayerTargetPos = { 0.0f, 0.0f, 2.0f };
 						}
 						if (input->IsKeyPressed(KGR::Key::A)) {
 							playerComp.StartPos = PositionState::CENTRE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 0.0f, 0.0f, 2.0f });
+							PlayerTargetPos = { 0.0f, 0.0f, 2.0f };
 						}
 						break;
 					}
@@ -436,17 +443,17 @@ struct GameScene : public IGameScene
 					if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
 						playerComp.StartDir = DirectionState::GAUCHE;
 						playerComp.StartPos = PositionState::CENTRE;
-						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ -6.0f,2.5f,2.0f });
+						PlayerTargetPos = { -6.0f,2.5f,2.0f };
 					}
 					if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
 						playerComp.StartDir = DirectionState::BAS;
 						playerComp.StartPos = PositionState::CENTRE;
-						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 0.0f,0.0f,2.0f });
+						PlayerTargetPos = { 0.0f,0.0f,2.0f };
 					}
 					if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
 						playerComp.StartDir = DirectionState::DROITE;
 						playerComp.StartPos = PositionState::CENTRE;
-						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 6.0f,2.5f,2.0f });
+						PlayerTargetPos = { 6.0f,2.5f,2.0f };
 					}
 
 					switch (playerComp.StartPos)
@@ -454,31 +461,31 @@ struct GameScene : public IGameScene
 					case PositionState::CENTRE:
 						if (input->IsKeyPressed(KGR::Key::Q)) {
 							playerComp.StartPos = PositionState::GAUCHE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 1.30f, 5.0f, 2.0f });
+							PlayerTargetPos = { 1.30f, 5.0f, 2.0f };
 						}
 						if (input->IsKeyPressed(KGR::Key::A)) {
 							playerComp.StartPos = PositionState::GAUCHE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 1.30f, 5.0f, 2.0f });
+							PlayerTargetPos = { 1.30f, 5.0f, 2.0f };
 						}
 						if (input->IsKeyPressed(KGR::Key::D)) {
 							playerComp.StartPos = PositionState::DROITE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ -1.30f, 5.0f, 2.0f });
+							PlayerTargetPos = { -1.30f, 5.0f, 2.0f };
 						}
 						break;
 					case PositionState::GAUCHE:
 						if (input->IsKeyPressed(KGR::Key::D)) {
 							playerComp.StartPos = PositionState::CENTRE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 0.0f, 5.0f, 2.0f });
+							PlayerTargetPos = { 0.0f, 5.0f, 2.0f };
 						}
 						break;
 					case PositionState::DROITE:
 						if (input->IsKeyPressed(KGR::Key::Q)) {
 							playerComp.StartPos = PositionState::CENTRE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 0.0f, 5.0f, 2.0f });
+							PlayerTargetPos = { 0.0f, 5.0f, 2.0f };
 						}
 						if (input->IsKeyPressed(KGR::Key::A)) {
 							playerComp.StartPos = PositionState::CENTRE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 0.0f, 5.0f, 2.0f });
+							PlayerTargetPos = { 0.0f, 5.0f, 2.0f };
 						}
 						break;
 					}
@@ -488,17 +495,17 @@ struct GameScene : public IGameScene
 					if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
 						playerComp.StartDir = DirectionState::HAUT;
 						playerComp.StartPos = PositionState::CENTRE;
-						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 0.0f,5.0f,2.0f });
+						PlayerTargetPos = { 0.0f,5.0f,2.0f };
 					}
 					if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
 						playerComp.StartDir = DirectionState::BAS;
 						playerComp.StartPos = PositionState::CENTRE;
-						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 0.0f,0.0f,2.0f });
+						PlayerTargetPos = { 0.0f,0.0f,2.0f };
 					}
 					if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
 						playerComp.StartDir = DirectionState::DROITE;
 						playerComp.StartPos = PositionState::CENTRE;
-						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 6.0f,2.5f,2.0f });
+						PlayerTargetPos = { 6.0f,2.5f,2.0f };
 					}
 
 					switch (playerComp.StartPos)
@@ -506,31 +513,31 @@ struct GameScene : public IGameScene
 					case PositionState::CENTRE:
 						if (input->IsKeyPressed(KGR::Key::Q)) {
 							playerComp.StartPos = PositionState::GAUCHE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ -6.0f, 3.80f, 2.0f });
+							PlayerTargetPos = { -6.0f, 3.80f, 2.0f };
 						}
 						if (input->IsKeyPressed(KGR::Key::A)) {
 							playerComp.StartPos = PositionState::GAUCHE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ -6.0f, 3.80f, 2.0f });
+							PlayerTargetPos = { -6.0f, 3.80f, 2.0f };
 						}
 						if (input->IsKeyPressed(KGR::Key::D)) {
 							playerComp.StartPos = PositionState::DROITE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ -6.0f, 1.20f, 2.0f });
+							PlayerTargetPos = { -6.0f, 1.20f, 2.0f };
 						}
 						break;
 					case PositionState::GAUCHE:
 						if (input->IsKeyPressed(KGR::Key::D)) {
 							playerComp.StartPos = PositionState::CENTRE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ -6.0f,2.5f,2.0f });
+							PlayerTargetPos = { -6.0f,2.5f,2.0f };
 						}
 						break;
 					case PositionState::DROITE:
 						if (input->IsKeyPressed(KGR::Key::Q)) {
 							playerComp.StartPos = PositionState::CENTRE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ -6.0f,2.5f,2.0f });
+							PlayerTargetPos = { -6.0f,2.5f,2.0f };
 						}
 						if (input->IsKeyPressed(KGR::Key::A)) {
 							playerComp.StartPos = PositionState::CENTRE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ -6.0f,2.5f,2.0f });
+							PlayerTargetPos = { -6.0f,2.5f,2.0f };
 						}
 						break;
 					}
@@ -540,17 +547,17 @@ struct GameScene : public IGameScene
 					if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
 						playerComp.StartDir = DirectionState::HAUT;
 						playerComp.StartPos = PositionState::CENTRE;
-						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 0.0f,5.0f,2.0f });
+						PlayerTargetPos = { 0.0f,5.0f,2.0f };
 					}
 					if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
 						playerComp.StartDir = DirectionState::GAUCHE;
 						playerComp.StartPos = PositionState::CENTRE;
-						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ -6.0f,2.5f,2.0f });
+						PlayerTargetPos = { -6.0f,2.5f,2.0f };
 					}
 					if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
 						playerComp.StartDir = DirectionState::BAS;
 						playerComp.StartPos = PositionState::CENTRE;
-						m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 0.0f,0.0f,2.0f });
+						PlayerTargetPos = { 0.0f,0.0f,2.0f };
 					}
 
 					switch (playerComp.StartPos)
@@ -558,36 +565,39 @@ struct GameScene : public IGameScene
 					case PositionState::CENTRE:
 						if (input->IsKeyPressed(KGR::Key::Q)) {
 							playerComp.StartPos = PositionState::GAUCHE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 6.0f, 1.20f, 2.0f });
+							PlayerTargetPos = { 6.0f, 1.20f, 2.0f };
 						}
 						if (input->IsKeyPressed(KGR::Key::A)) {
 							playerComp.StartPos = PositionState::GAUCHE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 6.0f, 1.20f, 2.0f });
+							PlayerTargetPos = { 6.0f, 1.20f, 2.0f };
 						}
 						if (input->IsKeyPressed(KGR::Key::D)) {
 							playerComp.StartPos = PositionState::DROITE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 6.0f, 3.80f, 2.0f });
+							PlayerTargetPos = { 6.0f, 3.80f, 2.0f };
 						}
 						break;
 					case PositionState::GAUCHE:
 						if (input->IsKeyPressed(KGR::Key::D)) {
 							playerComp.StartPos = PositionState::CENTRE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 6.0f,2.5f,2.0f });
+							PlayerTargetPos = { 6.0f,2.5f,2.0f };
 						}
 						break;
 					case PositionState::DROITE:
 						if (input->IsKeyPressed(KGR::Key::Q)) {
 							playerComp.StartPos = PositionState::CENTRE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 6.0f,2.5f,2.0f });
+							PlayerTargetPos = { 6.0f,2.5f,2.0f };
 						}
 						if (input->IsKeyPressed(KGR::Key::A)) {
 							playerComp.StartPos = PositionState::CENTRE;
-							m_ecs.GetComponent<TransformComponent>(e).SetPosition({ 6.0f,2.5f,2.0f });
+							PlayerTargetPos = { 6.0f,2.5f,2.0f };
 						}
 						break;
 					}
 					break;
 				}
+
+				PlayerCurrentPos = glm::mix(PlayerCurrentPos, PlayerTargetPos, smoothPlayerSpeed * dt);
+				m_ecs.GetComponent<TransformComponent>(e).SetPosition(PlayerCurrentPos);
 
 				glm::vec3 camTargetPos = { 0,0,0 };
 				glm::vec3 camTargetLook = { 0,0,0 };
@@ -599,23 +609,23 @@ struct GameScene : public IGameScene
 					switch (playerComp.StartDir)
 					{
 					case DirectionState::BAS:
-						camTargetPos = { 0,5,7 };
-						camTargetLook = { 0, -10, 0 };
+						camTargetPos = { 0,3,7 };
+						camTargetLook = { 0, -5, -8 };
 						break;
 
 					case DirectionState::HAUT:
-						camTargetPos = { 0,-5,7 };
-						camTargetLook = { 0, 10, 0 };
+						camTargetPos = { 0,3,7 };
+						camTargetLook = { 0, 5, -8 };
 						break;
 
 					case DirectionState::GAUCHE:
-						camTargetPos = { 0,5,7 };
-						camTargetLook = { -15, 0, 0 };
+						camTargetPos = { 0,3,7 };
+						camTargetLook = { -10, 0, -8 };
 						break;
 
 					case DirectionState::DROITE:
-						camTargetPos = { 0,5,7 };
-						camTargetLook = { 15, 0, 0 };
+						camTargetPos = { 0,3,7 };
+						camTargetLook = { 10, 0, -8 };
 						break;
 					}
 
