@@ -44,12 +44,12 @@ struct VSOutput
     float3 bitangent;
 };
 
-
 [shader("vertex")]
-VSOutput vertMain(VSInput input, uint instance : SV_StartInstanceLocation) {
+VSOutput vertMain(VSInput input, uint instanceId: SV_InstanceID, uint startInstance : SV_StartInstanceLocation) {
     VSOutput output;
 
-    float4x4 currentModel = instanceTransforms.Load(instance).model;
+    uint globalId = startInstance + instanceId;
+    float4x4 currentModel = instanceTransforms.Load(globalId).model;
 
     float4 wsPos = mul(currentModel, float4(input.inPosition, 1.0f));
     output.pos = mul(data.CamUbo.proj, mul(data.CamUbo.view, wsPos));

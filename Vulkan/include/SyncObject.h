@@ -5,6 +5,7 @@ namespace KGR
 {
 	namespace _Vulkan
 	{
+		class Buffer;
 		class SwapChain; ///< Forward declaration of Vulkan swap chain
 		class Device;    ///< Forward declaration of Vulkan logical device
 
@@ -103,6 +104,8 @@ namespace KGR
 			 */
 			const uint32_t& GetCurrentFrame() const;
 
+			void Add(Buffer&& buffer);
+			void Clear();
 		private:
 
 			/**
@@ -134,6 +137,9 @@ namespace KGR
 			 * @brief Total number of images in the swap chain.
 			 */
 			uint32_t m_imageCount;
+
+
+			std::vector<std::vector<Buffer>> buffersToClear;
 		};
 	}
 }

@@ -106,7 +106,7 @@ namespace KGR
 			 * @param buffers Command buffers used for the copy operation.
 			 * @return Vulkan semaphore used for synchronization.
 			 */
-			vk::raii::Semaphore CopyAssync(Buffer* other, Device* device, Queue* queue, CommandBuffers* buffers);
+			void CopyAssync(vk::raii::CommandBuffer* commandBuffer,Buffer* other, Device* device, Queue* queue);
 
 			/**
 			 * @brief Copies the buffer content into a Vulkan image.
@@ -116,7 +116,7 @@ namespace KGR
 			 * @param queue Pointer to the Vulkan queue.
 			 * @param buffers Command buffers used for the copy operation.
 			 */
-			void CopyImage(Image* image, Device* device, Queue* queue, CommandBuffers* buffers);
+			void CopyImage(vk::raii::CommandBuffer* commandBuffer,Image* image, Device* device, Queue* queue, CommandBuffers* buffers);
 
 			/**
 			 * @brief Creates a Vulkan buffer and allocates its memory.
@@ -155,7 +155,7 @@ namespace KGR
 			 * @param commandBuffer Command buffer used for the copy operation.
 			 * @return Vulkan semaphore used for synchronization.
 			 */
-			static vk::raii::Semaphore copyBufferAssync(vk::raii::Buffer& srcBuffer, vk::raii::Buffer& dstBuffer, vk::DeviceSize size, Device* device, Queue* queue, CommandBuffers* commandBuffer);
+			static void copyBufferAssync(vk::raii::CommandBuffer* commandBuffer,vk::raii::Buffer& srcBuffer, vk::raii::Buffer& dstBuffer, vk::DeviceSize size, Device* device, Queue* queue);
 
 			/**
 			 * @brief Finds a suitable memory type on the physical device.

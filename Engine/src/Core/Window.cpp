@@ -5,6 +5,7 @@
 #include "Core/CameraComponent.h"
 #include "Core/Font.h"
 
+
 KGR::RenderWindow::RenderWindow(glm::ivec2 size, const char* name, const std::filesystem::path& GlobResourcesPath)
 {
 	STBManager::SetGlobalFIlePath(GlobResourcesPath);
@@ -19,7 +20,6 @@ KGR::RenderWindow::RenderWindow(glm::ivec2 size, const char* name, const std::fi
 	m_window.CreateMyWindow(size, name, nullptr, nullptr);
 	m_core.initVulkan(&m_window.GetWindow());
 	m_manager.Initialize(&m_window.GetWindow());
-
 }
 
 void KGR::RenderWindow::Init()
@@ -31,6 +31,7 @@ void KGR::RenderWindow::Init()
 
 void KGR::RenderWindow::Destroy()
 {
+	m_core.Destroy();
 	m_window.DestroyMyWindow();
 	STBManager::UnloadAll();
 	MeshLoader::UnloadAll();

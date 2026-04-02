@@ -1,6 +1,7 @@
 #include "SyncObject.h"
 #include "SwapChain.h"
 #include "Device.h"
+#include "Buffer.h"
 KGR::_Vulkan::SyncObject::SyncObject(Device* device, uint32_t imageCount)
 : m_imageCount(imageCount)
 , m_frameIndex(0)
@@ -18,6 +19,7 @@ KGR::_Vulkan::SyncObject::SyncObject(Device* device, uint32_t imageCount)
 				m_presentCompleteSemaphores.emplace_back(device->Get(), vk::SemaphoreCreateInfo());
 				m_inFlightFences.emplace_back(device->Get(), vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled });
 			}
+			buffersToClear.resize(imageCount);
 }
 
 KGR::_Vulkan::SyncObject::MyVkSemaphore& KGR::_Vulkan::SyncObject::GetCurrentPresentSemaphore()
@@ -82,3 +84,14 @@ const uint32_t& KGR::_Vulkan::SyncObject::GetCurrentFrame() const
 {
 	return m_frameIndex;
 }
+
+void KGR::_Vulkan::SyncObject::Add(Buffer&& buffer)
+{
+	buffersToClear[m_frameIndex].push_back(std::move(buffer));
+}
+
+void KGR::_Vulkan::SyncObject::Clear()
+{
+	buffersToClear[m_frameIndex].clear();
+}
+

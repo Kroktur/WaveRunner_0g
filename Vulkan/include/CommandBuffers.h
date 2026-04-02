@@ -48,6 +48,7 @@ namespace KGR
 				 */
 				vkFence     isGpuFree = nullptr;
 
+
 				/**
 				 * @brief Indicates whether the command buffer is available for CPU usage.
 				 */
@@ -100,7 +101,7 @@ namespace KGR
 			 * @param commandBuffer Vulkan command buffer to release.
 			 */
 			void ReleaseCommandBuffer(vkCommandBuffer& commandBuffer);
-
+			void Clear();
 		private:
 
 			/**

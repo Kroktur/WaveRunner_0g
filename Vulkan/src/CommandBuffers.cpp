@@ -23,7 +23,7 @@ KGR::_Vulkan::CommandBuffers::vkCommandBuffer& KGR::_Vulkan::CommandBuffers::Acq
 {
 	for (auto& [_, cb] : m_commandBuffers)
 	{
-		if (cb.isCpuFree && (cb.isGpuFree.getStatus() == vk::Result::eNotReady))
+		if (cb.isCpuFree && (cb.isGpuFree.getStatus() == vk::Result::eSuccess))
 		{
 			cb.isCpuFree = false;
 			return cb.commandBuffer;
@@ -56,6 +56,11 @@ KGR::_Vulkan::CommandBuffers::vkFence& KGR::_Vulkan::CommandBuffers::GetFence(vk
 void KGR::_Vulkan::CommandBuffers::ReleaseCommandBuffer(vkCommandBuffer& commandBuffer)
 {
 		m_commandBuffers[*commandBuffer].isCpuFree = true;
+}
+
+void KGR::_Vulkan::CommandBuffers::Clear()
+{
+	m_commandBuffers.clear();
 }
 
 
