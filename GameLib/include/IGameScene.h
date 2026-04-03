@@ -185,7 +185,7 @@ struct GameScene : public IGameScene
 
 		
 		
-		for (int i = 0 ; i < 700; ++i)
+		for (int i = 0 ; i < 0; ++i)
 		{
 			// a mesh need a meshComponent a transform and a texture 
 
@@ -216,7 +216,7 @@ struct GameScene : public IGameScene
 			// create the transform and set all the data
 			TransformComponent transform;
 			transform.SetPosition({ 0,0,0 });
-			transform.SetScale({ 3.0f, 3.0f,3.0f });
+			transform.SetScale({ 1.0f, 1.0f,1.0f });
 			// same create an entity / id
 			auto e = m_ecs.CreateEntity();
 			// fill the component
@@ -229,7 +229,7 @@ struct GameScene : public IGameScene
 
 			// create a mesh and load it with the cash loader
 			MeshComponent mesh;
-			mesh.mesh = &MeshLoader::Load("Models/bloc.obj", m_window->App());
+			mesh.mesh = &MeshLoader::Load("Models/Obstacles/bloc_1x2.obj", m_window->App());
 
 			// create a texture 
 			MaterialComponent text;
@@ -239,10 +239,10 @@ struct GameScene : public IGameScene
 			for (int i = 0; i < mesh.mesh->GetSubMeshesCount(); ++i)
 			{
 				Material mat;
-				mat.baseColor = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", m_window->App());
-				mat.emissive = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", m_window->App());
-				mat.normalMap = &TextureLoader::Load("Textures/bloc_Normal.png", m_window->App());
-				mat.pbrMap = &TextureLoader::Load("Textures/bloc_ORM.png", m_window->App());
+				mat.baseColor = &TextureLoader::Load("Textures/Obstacles/BaseColor.png", m_window->App());
+				mat.emissive = &TextureLoader::Load("Textures/Obstacles/Emissive.png", m_window->App());
+				mat.normalMap = &TextureLoader::Load("Textures/Obstacles/Normal.png", m_window->App());
+				mat.pbrMap = &TextureLoader::Load("Textures/Obstacles/ORM.png", m_window->App());
 
 
 
