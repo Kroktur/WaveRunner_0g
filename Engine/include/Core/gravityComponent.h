@@ -7,10 +7,12 @@ public:
 
 	void uptadePhysique(float dt)
 	{
-
-		velocity += g * speed * dt;
-		if (velocity >= max_velocity)
-			velocity = max_velocity;
+		if(!m_isGround)
+		{
+			velocity += g * speed * dt;
+			if (velocity >= max_velocity)
+				velocity = max_velocity;
+		}
 	}
 
 	float getVelocity()
@@ -57,5 +59,5 @@ private:
 	float speed = 5.0f;
 	float max_velocity = 10.0f;
 	float jumpForce = 12.0f;
-	bool m_isGround = false;
+	bool m_isGround = true;
 };

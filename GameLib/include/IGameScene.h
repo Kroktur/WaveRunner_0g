@@ -26,6 +26,7 @@
 #include "Math/CollisionComponent.h"
 #include "Math/OBB.h"
 #include "Math/SAT.h"
+#include <iostream>
 
 using ecsType = KGR::ECS::Registry<KGR::ECS::Entity::_64, 100>;
 
@@ -491,25 +492,25 @@ struct GameScene : public IGameScene
 				auto& gravity = m_ecs.GetComponent<PhysicComponent>(e);
 				auto& colision = m_ecs.GetComponent<CollisionComp>(e);
 
-				if (!isGravity)
-				{
+				//if (!isGravity)
+				//{
 					switch (playerComp.StartDir)
 					{
 					case DirectionState::BAS:
 						if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
 							playerComp.StartDir = DirectionState::HAUT;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos = { 0.0f,5.0f,2.0f };
+							PlayerTargetPos.x = 0;
 						}
 						if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
 							playerComp.StartDir = DirectionState::GAUCHE;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos = { -4.0f,2.5f,2.0f };
+							PlayerTargetPos.y = 2.5f;
 						}
 						if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
 							playerComp.StartDir = DirectionState::DROITE;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos = { 4.0f,2.5f,2.0f };
+							PlayerTargetPos.y = 2.5f;
 						}
 
 						switch (playerComp.StartPos)
@@ -517,31 +518,31 @@ struct GameScene : public IGameScene
 						case PositionState::CENTRE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos = { -1.30f, 0.0f, 2.0f };
+								PlayerTargetPos.x = -1.30f;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos = { -1.30f, 0.0f, 2.0f };
+								PlayerTargetPos.x = -1.30f;
 							}
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos = { 1.30f, 0.0f, 2.0 };
+								PlayerTargetPos.x = 1.30f;
 							}
 							break;
 						case PositionState::GAUCHE:
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos = { 0.0f, 0.0f, 2.0f };
+								PlayerTargetPos.x = 0;
 							}
 							break;
 						case PositionState::DROITE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos = { 0.0f, 0.0f, 2.0f };
+								PlayerTargetPos.x = 0;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos = { 0.0f, 0.0f, 2.0f };
+								PlayerTargetPos.x = 0;
 							}
 							break;
 						}
@@ -551,17 +552,17 @@ struct GameScene : public IGameScene
 						if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
 							playerComp.StartDir = DirectionState::GAUCHE;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos = { -4.0f,2.5f,2.0f };
+							PlayerTargetPos.y = 2.5f;
 						}
 						if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
 							playerComp.StartDir = DirectionState::BAS;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos = { 0.0f,0.0f,2.0f };
+							PlayerTargetPos.x = 0;
 						}
 						if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
 							playerComp.StartDir = DirectionState::DROITE;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos = { 4.0f,2.5f,2.0f };
+							PlayerTargetPos.y = 2.5f;
 						}
 
 						switch (playerComp.StartPos)
@@ -569,31 +570,31 @@ struct GameScene : public IGameScene
 						case PositionState::CENTRE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos = { 1.30f, 5.0f, 2.0f };
+								PlayerTargetPos.x = 1.30f;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos = { 1.30f, 5.0f, 2.0f };
+								PlayerTargetPos.x = 1.30f;
 							}
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos = { -1.30f, 5.0f, 2.0f };
+								PlayerTargetPos.x = -1.30f;
 							}
 							break;
 						case PositionState::GAUCHE:
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos = { 0.0f, 5.0f, 2.0f };
+								PlayerTargetPos.x = 0;
 							}
 							break;
 						case PositionState::DROITE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos = { 0.0f, 5.0f, 2.0f };
+								PlayerTargetPos.x = 0;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos = { 0.0f, 5.0f, 2.0f };
+								PlayerTargetPos.x = 0;
 							}
 							break;
 						}
@@ -603,17 +604,17 @@ struct GameScene : public IGameScene
 						if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
 							playerComp.StartDir = DirectionState::HAUT;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos = { 0.0f,5.0f,2.0f };
+							PlayerTargetPos.x = 0;
 						}
 						if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
 							playerComp.StartDir = DirectionState::BAS;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos = { 0.0f,0.0f,2.0f };
+							PlayerTargetPos.x = 0;
 						}
 						if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
 							playerComp.StartDir = DirectionState::DROITE;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos = { 4.0f,2.5f,2.0f };
+							PlayerTargetPos.y = 2.5;
 						}
 
 						switch (playerComp.StartPos)
@@ -621,31 +622,31 @@ struct GameScene : public IGameScene
 						case PositionState::CENTRE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos = { -4.0f, 3.80f, 2.0f };
+								PlayerTargetPos.y = 3.80f;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos = { -4.0f, 3.80f, 2.0f };
+								PlayerTargetPos.y = 3.80f;
 							}
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos = { -4.0f, 1.20f, 2.0f };
+								PlayerTargetPos.y = 1.20f;
 							}
 							break;
 						case PositionState::GAUCHE:
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos = { -4.0f,2.5f,2.0f };
+								PlayerTargetPos.y = 2.5f;
 							}
 							break;
 						case PositionState::DROITE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos = { -4.0f,2.5f,2.0f };
+								PlayerTargetPos.y = 2.5f;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos = { -4.0f,2.5f,2.0f };
+								PlayerTargetPos.y = 2.5f;
 							}
 							break;
 						}
@@ -655,17 +656,17 @@ struct GameScene : public IGameScene
 						if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
 							playerComp.StartDir = DirectionState::HAUT;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos = { 0.0f,5.0f,2.0f };
+							PlayerTargetPos.x = 0.0f;
 						}
 						if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
 							playerComp.StartDir = DirectionState::GAUCHE;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos = { -4.0f,2.5f,2.0f };
+							PlayerTargetPos.y = 2.5f;
 						}
 						if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
 							playerComp.StartDir = DirectionState::BAS;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos = { 0.0f,0.0f,2.0f };
+							PlayerTargetPos.x = 0.0f;
 						}
 
 						switch (playerComp.StartPos)
@@ -673,41 +674,57 @@ struct GameScene : public IGameScene
 						case PositionState::CENTRE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos = { 4.0f, 1.20f, 2.0f };
+								PlayerTargetPos.y = 1.20f;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos = { 4.0f, 1.20f, 2.0f };
+								PlayerTargetPos.y = 1.20f;
 							}
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos = { 4.0f, 3.80f, 2.0f };
+								PlayerTargetPos.y = 3.80f;
 							}
 							break;
 						case PositionState::GAUCHE:
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos = { 4.0f,2.5f,2.0f };
+								PlayerTargetPos.y = 2.5f;
 							}
 							break;
 						case PositionState::DROITE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos = { 4.0f,2.5f,2.0f };
+								PlayerTargetPos.y = 2.5f;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos = { 4.0f,2.5f,2.0f };
+								PlayerTargetPos.y = 2.5f;
 							}
 							break;
 						}
 						break;
 					}
 
-					PlayerCurrentPos = glm::mix(PlayerCurrentPos, PlayerTargetPos, smoothPlayerSpeed * dt);
-					m_ecs.GetComponent<TransformComponent>(e).SetPosition(PlayerCurrentPos);
+					glm::vec3 currentPos = transform.GetPosition();
 
-				}
+					switch (playerComp.StartDir)
+					{
+					case DirectionState::BAS:
+					case DirectionState::HAUT:
+						PlayerCurrentPos.x = glm::mix(PlayerCurrentPos.x, PlayerTargetPos.x, smoothPlayerSpeed * dt);
+						currentPos.x = PlayerCurrentPos.x;
+						break;
+
+					case DirectionState::GAUCHE:
+					case DirectionState::DROITE:
+						PlayerCurrentPos.y = glm::mix(PlayerCurrentPos.y, PlayerTargetPos.y, smoothPlayerSpeed * dt);
+						currentPos.y = PlayerCurrentPos.y;
+						break;
+					}
+
+					transform.SetPosition(currentPos);
+
+				/*}*/
 
 
 				glm::vec3 camTargetPos = { 0,0,0 };
@@ -747,54 +764,77 @@ struct GameScene : public IGameScene
 					camTransform.LookAt(camCurrentLook);
 
 					///////////////////////////////////////////////////////////////////////////////
-					glm::vec3 dir(0.0f);
+				}
 
-					switch (playerComp.StartDir)
+				glm::vec3 dir(0.0f);
+
+				switch (playerComp.StartDir)
+				{
+				case DirectionState::BAS: dir = { 0,-1,0 }; break;
+				case DirectionState::HAUT: dir = { 0,1,0 }; break;
+				case DirectionState::GAUCHE: dir = { -1,0,0 }; break;
+				case DirectionState::DROITE: dir = { 1,0,0 }; break;
+				}
+
+
+				if (input->IsKeyDown(KGR::Key::Z) && gravity.getIsGround())
+				{
+					gravity.jump();
+				}				
+
+				gravity.uptadePhysique(dt);
+				glm::vec3 move = dir * gravity.getVelocity() * dt;
+
+				//if (glm::length(move) < 0.0001f)
+				//	continue;
+
+				transform.Translate(move);
+
+
+				auto boxOBB = colision.collider->ComputeGlobalOBB(
+					transform.GetScale(), transform.GetPosition(), transform.GetOrientation());
+
+				//gravity.setIsGround(false);
+
+				bool grounded = false;
+
+				auto plateforms = m_ecs.GetAllComponentsView<Plateform, TransformComponent, CollisionComp>();
+				for (auto p : plateforms)
+				{
+					auto& tP = m_ecs.GetComponent<TransformComponent>(p);
+					auto& colP = m_ecs.GetComponent<CollisionComp>(p);
+
+					auto pOBB = colP.collider->ComputeGlobalOBB(
+						tP.GetScale(), tP.GetPosition(), tP.GetOrientation());
+
+					auto collision = KGR::SeparatingAxisTheorem::CheckCollisionOBB3D(boxOBB, pOBB);
+					if (collision.IsColliding() && gravity.getVelocity() >= 0.0f)
 					{
-					case DirectionState::BAS: dir = { 0,-1,0 }; break;
-					case DirectionState::HAUT: dir = { 0,1,0 }; break;
-					case DirectionState::GAUCHE: dir = { -1,0,0 }; break;
-					case DirectionState::DROITE: dir = { 1,0,0 }; break;
-					}
+						glm::vec3 playerPosDist = transform.GetPosition() - tP.GetPosition();
+						bool isGroundSide = glm::dot(playerPosDist, dir) < 0;
+						bool isFalling = gravity.getVelocity() >= 0.0f;
 
-
-					if (input->IsKeyDown(KGR::Key::Z))
-					{
-						isGravity = true;
-						gravity.jump();
-					}
-					if (gravity.getVelocity() == 0.0f)
-					{
-						isGravity = false;
-					}
-
-					gravity.uptadePhysique(dt);
-					glm::vec3 move = dir * gravity.getVelocity() * dt;
-					transform.Translate(move);
-
-					auto boxOBB = colision.collider->ComputeGlobalOBB(
-						transform.GetScale(), transform.GetPosition(), transform.GetOrientation());
-
-					gravity.setIsGround(false);
-
-					auto plateforms = m_ecs.GetAllComponentsView<Plateform, TransformComponent, CollisionComp>();
-					for (auto p : plateforms)
-					{
-						auto& tP = m_ecs.GetComponent<TransformComponent>(p);
-						auto& colP = m_ecs.GetComponent<CollisionComp>(p);
-
-						auto pOBB = colP.collider->ComputeGlobalOBB(
-							tP.GetScale(), tP.GetPosition(), tP.GetOrientation());
-
-						auto collision = KGR::SeparatingAxisTheorem::CheckCollisionOBB3D(boxOBB, pOBB);
-						if (collision.IsColliding())
+						if (isGroundSide && isFalling)
 						{
 							transform.Translate(-move);
+							boxOBB = colision.collider->ComputeGlobalOBB(
+								transform.GetScale(), transform.GetPosition(), transform.GetOrientation());
+							grounded = true;
 							gravity.resetVelocity();
-							gravity.setIsGround(true);
 						}
+						else if (!isGroundSide)
+						{
+							transform.Translate(-move);
+							boxOBB = colision.collider->ComputeGlobalOBB(
+								transform.GetScale(), transform.GetPosition(), transform.GetOrientation());
+							gravity.resetVelocity();
+						}
+
 					}
+					
 				}
+				gravity.setIsGround(grounded);
+
 			}
 		}
 

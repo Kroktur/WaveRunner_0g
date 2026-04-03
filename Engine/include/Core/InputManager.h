@@ -60,11 +60,7 @@ namespace KGR
         Left_arrow = GLFW_KEY_LEFT,
         Right_arrow = GLFW_KEY_RIGHT,
         Up_arrow = GLFW_KEY_UP,
-<<<<<<< HEAD
         Down_arrow = GLFW_KEY_DOWN,
-=======
-        Down_arrow = GLFW_KEY_DOWN
->>>>>>> 8c4187fcd7440283c1529faee4d5a98539c8fdd9
     };
 
     /**
