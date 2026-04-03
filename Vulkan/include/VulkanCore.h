@@ -124,11 +124,8 @@ namespace KGR
 			 * @brief Initializes Vulkan and creates all required resources.
 			 * @param window Pointer to GLFW window.
 			 */
-			void initVulkan(GLFWwindow* window);
-			~VulkanCore()
-			{
-				device.Get().waitIdle();
-			}
+			void  initVulkan(GLFWwindow* window);
+			
 			/**
 			 * @brief Debug callback function for Vulkan validation layers.
 			 */
@@ -238,7 +235,7 @@ namespace KGR
 			 * @param imguiDraw Optional ImGui draw data
 			 */
 			void Render(GLFWwindow* window, const glm::vec4& clearColor = { 0,0,0,1 }, ImDrawData* imguiDraw = nullptr, KGR::Editor::Offscreen* offscreen = nullptr);
-
+			void Destroy();
 		private:
 
 			int BeginRendering(GLFWwindow* window, vk::raii::CommandBuffer* currentBuffer, Pipeline* pipeline, const glm::vec4& color = { 0,0,0,1 });
@@ -261,8 +258,8 @@ namespace KGR
 				vk::ImageAspectFlags image_aspect_flags,
 				vk::raii::CommandBuffer& buffer);
 
-			void transitionImageLayout(const vk::raii::Image& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
-			void generateMipmaps(vk::raii::Image& image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
+			void transitionImageLayout(vk::raii::CommandBuffer* commandBuffer,const vk::raii::Image& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
+			void generateMipmaps(vk::raii::CommandBuffer* commandBuffer,vk::raii::Image& image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 
 			// Vulkan core resources
 			Instance               instance;
@@ -292,19 +289,17 @@ namespace KGR
 			std::vector<const char*> requiredDeviceExtension = { vk::KHRSwapchainExtensionName };
 
 			// Temporary buffers
-			Buffer stagingVertexBuffer;
+			
 			Buffer vertexBuffer;
-			Buffer stagingIndexBuffer;
 			Buffer indexBuffer;
 
-			Buffer uniformBuffers;
+			
 			std::vector<LightData> m_lights;
 			DescriptorSet m_LightSet;
 			Buffer m_lightBuffer;
-			Buffer m_lightCount;
 			Buffer m_transformBuffer;
 			DescriptorSet m_transformSet;
-			std::optional<UniformBufferObject> m_ubo;
+			
 			std::vector<MeshData> m_toRenderObject;
 			std::vector<UiDataGPU> uIRender;
 			std::vector<TextData> m_textData;
@@ -313,6 +308,12 @@ namespace KGR
 			Buffer uiVertexBuffer;
 			Buffer uiIndexBuffer;
 
+	
+			Buffer m_lightCount;
+
+
+			std::optional<UniformBufferObject> m_ubo;
+			Buffer uniformBuffers;
 		};
 
 		template <typename VertexT>
