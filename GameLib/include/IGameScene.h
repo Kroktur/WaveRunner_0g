@@ -41,7 +41,9 @@ float smoothPlayerSpeed = 6.0f;
 struct controlComponentPlayer
 {
 	glm::vec3 PlayerTargetPos = { 0.0f, 0.0f, 2.0f };
+
 };
+
 
 enum class DirectionState
 {
@@ -58,6 +60,45 @@ enum class PositionState
 	GAUCHE,
 	DROITE
 };
+
+
+struct Pos
+{
+	std::pair<DirectionState, PositionState> pairPosition;
+	glm::vec2 position;
+};
+
+const std::array<Pos, 12> Positions =
+{{
+	{{DirectionState::BAS, PositionState::GAUCHE},  { -1.30f, 0.0f  }},
+	{{DirectionState::BAS, PositionState::CENTRE},  { 0.0f, 0.0f  }},
+	{{DirectionState::BAS, PositionState::DROITE},  { 1.30f, 0.0f  }},
+
+	{{DirectionState::HAUT, PositionState::GAUCHE},  { 1.30f , 5  }},
+	{{DirectionState::HAUT, PositionState::CENTRE},  { 0.0f, 5  }},
+	{{DirectionState::HAUT, PositionState::DROITE},  { -1.30f, 5  }},
+
+	{{DirectionState::GAUCHE, PositionState::GAUCHE},  { -4, 3.80  }},
+	{{DirectionState::GAUCHE, PositionState::CENTRE},  { -4, 2.5  }},
+	{{DirectionState::GAUCHE, PositionState::DROITE},  { -4, 1.2 }},
+
+	{{DirectionState::DROITE, PositionState::GAUCHE},  { 4, 1.2  }},
+	{{DirectionState::DROITE, PositionState::CENTRE},  { 4, 2.5  }},
+	{{DirectionState::DROITE, PositionState::DROITE},  { 4, 3.80  }},
+
+}};
+
+glm::vec2 getPosition(DirectionState dir, PositionState pos)
+{
+	for (const auto& posArr : Positions)
+	{
+		if (posArr.pairPosition == std::make_pair(dir, pos))
+		{
+			return posArr.position;
+		}
+	}
+	return { 0.0f, 0.0f };
+}
 
 struct playerComponent
 {
@@ -492,218 +533,275 @@ struct GameScene : public IGameScene
 				auto& gravity = m_ecs.GetComponent<PhysicComponent>(e);
 				auto& colision = m_ecs.GetComponent<CollisionComp>(e);
 
-				//if (!isGravity)
-				//{
-					switch (playerComp.StartDir)
+				// changement de plateformes
+				if (input->IsKeyPressed(KGR::Key::Up_arrow) && (playerComp.StartDir == DirectionState::BAS 
+					|| playerComp.StartDir == DirectionState::GAUCHE || playerComp.StartDir == DirectionState::DROITE))
+				{ 
+					playerComp.StartDir = DirectionState::HAUT;
+					playerComp.StartPos = PositionState::CENTRE;
+				};
+				if (input->IsKeyPressed(KGR::Key::Down_arrow) && (playerComp.StartDir == DirectionState::HAUT
+					|| playerComp.StartDir == DirectionState::GAUCHE || playerComp.StartDir == DirectionState::DROITE))
+				{
+					playerComp.StartDir = DirectionState::BAS;
+					playerComp.StartPos = PositionState::CENTRE;
+				};
+				if (input->IsKeyPressed(KGR::Key::Left_arrow) && (playerComp.StartDir == DirectionState::BAS
+					|| playerComp.StartDir == DirectionState::HAUT || playerComp.StartDir == DirectionState::DROITE))
+				{
+					playerComp.StartDir = DirectionState::GAUCHE;
+					playerComp.StartPos = PositionState::CENTRE;
+				};
+				if (input->IsKeyPressed(KGR::Key::Right_arrow) && (playerComp.StartDir == DirectionState::BAS
+					|| playerComp.StartDir == DirectionState::HAUT || playerComp.StartDir == DirectionState::GAUCHE))
+				{
+					playerComp.StartDir = DirectionState::DROITE;
+					playerComp.StartPos = PositionState::CENTRE;
+				};
+
+
+				// changement de lanes
+				if (input->IsKeyPressed(KGR::Key::Q) || input->IsKeyPressed(KGR::Key::A))
+				{
+					if (playerComp.StartPos == PositionState::DROITE)
 					{
-					case DirectionState::BAS:
-						if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
-							playerComp.StartDir = DirectionState::HAUT;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = 0;
-						}
-						if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
-							playerComp.StartDir = DirectionState::GAUCHE;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = 2.5f;
-						}
-						if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
-							playerComp.StartDir = DirectionState::DROITE;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = 2.5f;
-						}
-
-						switch (playerComp.StartPos)
-						{
-						case PositionState::CENTRE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.x = -1.30f;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.x = -1.30f;
-							}
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos.x = 1.30f;
-							}
-							break;
-						case PositionState::GAUCHE:
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = 0;
-							}
-							break;
-						case PositionState::DROITE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = 0;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = 0;
-							}
-							break;
-						}
-						break;
-
-					case DirectionState::HAUT:
-						if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
-							playerComp.StartDir = DirectionState::GAUCHE;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = 2.5f;
-						}
-						if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
-							playerComp.StartDir = DirectionState::BAS;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = 0;
-						}
-						if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
-							playerComp.StartDir = DirectionState::DROITE;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = 2.5f;
-						}
-
-						switch (playerComp.StartPos)
-						{
-						case PositionState::CENTRE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.x = 1.30f;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.x = 1.30f;
-							}
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos.x = -1.30f;
-							}
-							break;
-						case PositionState::GAUCHE:
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = 0;
-							}
-							break;
-						case PositionState::DROITE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = 0;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = 0;
-							}
-							break;
-						}
-						break;
-
-					case DirectionState::GAUCHE:
-						if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
-							playerComp.StartDir = DirectionState::HAUT;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = 0;
-						}
-						if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
-							playerComp.StartDir = DirectionState::BAS;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = 0;
-						}
-						if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
-							playerComp.StartDir = DirectionState::DROITE;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = 2.5;
-						}
-
-						switch (playerComp.StartPos)
-						{
-						case PositionState::CENTRE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.y = 3.80f;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.y = 3.80f;
-							}
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos.y = 1.20f;
-							}
-							break;
-						case PositionState::GAUCHE:
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = 2.5f;
-							}
-							break;
-						case PositionState::DROITE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = 2.5f;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = 2.5f;
-							}
-							break;
-						}
-						break;
-
-					case DirectionState::DROITE:
-						if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
-							playerComp.StartDir = DirectionState::HAUT;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = 0.0f;
-						}
-						if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
-							playerComp.StartDir = DirectionState::GAUCHE;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = 2.5f;
-						}
-						if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
-							playerComp.StartDir = DirectionState::BAS;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = 0.0f;
-						}
-
-						switch (playerComp.StartPos)
-						{
-						case PositionState::CENTRE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.y = 1.20f;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.y = 1.20f;
-							}
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos.y = 3.80f;
-							}
-							break;
-						case PositionState::GAUCHE:
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = 2.5f;
-							}
-							break;
-						case PositionState::DROITE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = 2.5f;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = 2.5f;
-							}
-							break;
-						}
-						break;
+						playerComp.StartPos = PositionState::CENTRE;
 					}
+					else if (playerComp.StartPos == PositionState::CENTRE)
+					{
+						playerComp.StartPos = PositionState::GAUCHE;
+					}
+				}
+				if (input->IsKeyPressed(KGR::Key::D))
+				{
+					if (playerComp.StartPos == PositionState::GAUCHE)
+					{
+						playerComp.StartPos = PositionState::CENTRE;
+					}
+					else if (playerComp.StartPos == PositionState::CENTRE)
+					{
+						playerComp.StartPos = PositionState::DROITE;
+					}
+				}
+
+				glm::vec2 position = getPosition(playerComp.StartDir, playerComp.StartPos);
+				PlayerTargetPos.x = position.x;
+				PlayerTargetPos.y = position.y;
+
+				//if (!isGravity)
+				////{
+				//	switch (playerComp.StartDir)
+				//	{
+				//	case DirectionState::BAS:
+				//		if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
+				//			playerComp.StartDir = DirectionState::HAUT;
+				//			playerComp.StartPos = PositionState::CENTRE;
+				//			PlayerTargetPos.x = 0;
+				//		}
+				//		if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
+				//			playerComp.StartDir = DirectionState::GAUCHE;
+				//			playerComp.StartPos = PositionState::CENTRE;
+				//			PlayerTargetPos.y = 2.5f;
+				//		}
+				//		if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
+				//			playerComp.StartDir = DirectionState::DROITE;
+				//			playerComp.StartPos = PositionState::CENTRE;
+				//			PlayerTargetPos.y = 2.5f;
+				//		}
+
+				//		switch (playerComp.StartPos)
+				//		{
+				//		case PositionState::CENTRE:
+				//			if (input->IsKeyPressed(KGR::Key::Q)) {
+				//				playerComp.StartPos = PositionState::GAUCHE;
+				//				PlayerTargetPos.x = -1.30f;
+				//			}
+				//			if (input->IsKeyPressed(KGR::Key::A)) {
+				//				playerComp.StartPos = PositionState::GAUCHE;
+				//				PlayerTargetPos.x = -1.30f;
+				//			}
+				//			if (input->IsKeyPressed(KGR::Key::D)) {
+				//				playerComp.StartPos = PositionState::DROITE;
+				//				PlayerTargetPos.x = 1.30f;
+				//			}
+				//			break;
+				//		case PositionState::GAUCHE:
+				//			if (input->IsKeyPressed(KGR::Key::D)) {
+				//				playerComp.StartPos = PositionState::CENTRE;
+				//				PlayerTargetPos.x = 0;
+				//			}
+				//			break;
+				//		case PositionState::DROITE:
+				//			if (input->IsKeyPressed(KGR::Key::Q)) {
+				//				playerComp.StartPos = PositionState::CENTRE;
+				//				PlayerTargetPos.x = 0;
+				//			}
+				//			if (input->IsKeyPressed(KGR::Key::A)) {
+				//				playerComp.StartPos = PositionState::CENTRE;
+				//				PlayerTargetPos.x = 0;
+				//			}
+				//			break;
+				//		}
+				//		break;
+
+				//	case DirectionState::HAUT:
+				//		if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
+				//			playerComp.StartDir = DirectionState::GAUCHE;
+				//			playerComp.StartPos = PositionState::CENTRE;
+				//			PlayerTargetPos.y = 2.5f;
+				//		}
+				//		if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
+				//			playerComp.StartDir = DirectionState::BAS;
+				//			playerComp.StartPos = PositionState::CENTRE;
+				//			PlayerTargetPos.x = 0;
+				//		}
+				//		if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
+				//			playerComp.StartDir = DirectionState::DROITE;
+				//			playerComp.StartPos = PositionState::CENTRE;
+				//			PlayerTargetPos.y = 2.5f;
+				//		}
+
+				//		switch (playerComp.StartPos)
+				//		{
+				//		case PositionState::CENTRE:
+				//			if (input->IsKeyPressed(KGR::Key::Q)) {
+				//				playerComp.StartPos = PositionState::GAUCHE;
+				//				PlayerTargetPos.x = 1.30f;
+				//			}
+				//			if (input->IsKeyPressed(KGR::Key::A)) {
+				//				playerComp.StartPos = PositionState::GAUCHE;
+				//				PlayerTargetPos.x = 1.30f;
+				//			}
+				//			if (input->IsKeyPressed(KGR::Key::D)) {
+				//				playerComp.StartPos = PositionState::DROITE;
+				//				PlayerTargetPos.x = -1.30f;
+				//			}
+				//			break;
+				//		case PositionState::GAUCHE:
+				//			if (input->IsKeyPressed(KGR::Key::D)) {
+				//				playerComp.StartPos = PositionState::CENTRE;
+				//				PlayerTargetPos.x = 0;
+				//			}
+				//			break;
+				//		case PositionState::DROITE:
+				//			if (input->IsKeyPressed(KGR::Key::Q)) {
+				//				playerComp.StartPos = PositionState::CENTRE;
+				//				PlayerTargetPos.x = 0;
+				//			}
+				//			if (input->IsKeyPressed(KGR::Key::A)) {
+				//				playerComp.StartPos = PositionState::CENTRE;
+				//				PlayerTargetPos.x = 0;
+				//			}
+				//			break;
+				//		}
+				//		break;
+
+				//	case DirectionState::GAUCHE:
+				//		if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
+				//			playerComp.StartDir = DirectionState::HAUT;
+				//			playerComp.StartPos = PositionState::CENTRE;
+				//			PlayerTargetPos.x = 0;
+				//		}
+				//		if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
+				//			playerComp.StartDir = DirectionState::BAS;
+				//			playerComp.StartPos = PositionState::CENTRE;
+				//			PlayerTargetPos.x = 0;
+				//		}
+				//		if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
+				//			playerComp.StartDir = DirectionState::DROITE;
+				//			playerComp.StartPos = PositionState::CENTRE;
+				//			PlayerTargetPos.y = 2.5;
+				//		}
+
+				//		switch (playerComp.StartPos)
+				//		{
+				//		case PositionState::CENTRE:
+				//			if (input->IsKeyPressed(KGR::Key::Q)) {
+				//				playerComp.StartPos = PositionState::GAUCHE;
+				//				PlayerTargetPos.y = 3.80f;
+				//			}
+				//			if (input->IsKeyPressed(KGR::Key::A)) {
+				//				playerComp.StartPos = PositionState::GAUCHE;
+				//				PlayerTargetPos.y = 3.80f;
+				//			}
+				//			if (input->IsKeyPressed(KGR::Key::D)) {
+				//				playerComp.StartPos = PositionState::DROITE;
+				//				PlayerTargetPos.y = 1.20f;
+				//			}
+				//			break;
+				//		case PositionState::GAUCHE:
+				//			if (input->IsKeyPressed(KGR::Key::D)) {
+				//				playerComp.StartPos = PositionState::CENTRE;
+				//				PlayerTargetPos.y = 2.5f;
+				//			}
+				//			break;
+				//		case PositionState::DROITE:
+				//			if (input->IsKeyPressed(KGR::Key::Q)) {
+				//				playerComp.StartPos = PositionState::CENTRE;
+				//				PlayerTargetPos.y = 2.5f;
+				//			}
+				//			if (input->IsKeyPressed(KGR::Key::A)) {
+				//				playerComp.StartPos = PositionState::CENTRE;
+				//				PlayerTargetPos.y = 2.5f;
+				//			}
+				//			break;
+				//		}
+				//		break;
+
+				//	case DirectionState::DROITE:
+				//		if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
+				//			playerComp.StartDir = DirectionState::HAUT;
+				//			playerComp.StartPos = PositionState::CENTRE;
+				//			PlayerTargetPos.x = 0.0f;
+				//		}
+				//		if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
+				//			playerComp.StartDir = DirectionState::GAUCHE;
+				//			playerComp.StartPos = PositionState::CENTRE;
+				//			PlayerTargetPos.y = 2.5f;
+				//		}
+				//		if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
+				//			playerComp.StartDir = DirectionState::BAS;
+				//			playerComp.StartPos = PositionState::CENTRE;
+				//			PlayerTargetPos.x = 0.0f;
+				//		}
+
+				//		switch (playerComp.StartPos)
+				//		{
+				//		case PositionState::CENTRE:
+				//			if (input->IsKeyPressed(KGR::Key::Q)) {
+				//				playerComp.StartPos = PositionState::GAUCHE;
+				//				PlayerTargetPos.y = 1.20f;
+				//			}
+				//			if (input->IsKeyPressed(KGR::Key::A)) {
+				//				playerComp.StartPos = PositionState::GAUCHE;
+				//				PlayerTargetPos.y = 1.20f;
+				//			}
+				//			if (input->IsKeyPressed(KGR::Key::D)) {
+				//				playerComp.StartPos = PositionState::DROITE;
+				//				PlayerTargetPos.y = 3.80f;
+				//			}
+				//			break;
+				//		case PositionState::GAUCHE:
+				//			if (input->IsKeyPressed(KGR::Key::D)) {
+				//				playerComp.StartPos = PositionState::CENTRE;
+				//				PlayerTargetPos.y = 2.5f;
+				//			}
+				//			break;
+				//		case PositionState::DROITE:
+				//			if (input->IsKeyPressed(KGR::Key::Q)) {
+				//				playerComp.StartPos = PositionState::CENTRE;
+				//				PlayerTargetPos.y = 2.5f;
+				//			}
+				//			if (input->IsKeyPressed(KGR::Key::A)) {
+				//				playerComp.StartPos = PositionState::CENTRE;
+				//				PlayerTargetPos.y = 2.5f;
+				//			}
+				//			break;
+				//		}
+				//		break;
+				//	}
+
+
 
 					glm::vec3 currentPos = transform.GetPosition();
 
