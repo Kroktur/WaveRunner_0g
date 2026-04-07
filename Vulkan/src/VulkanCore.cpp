@@ -1020,7 +1020,7 @@ void KGR::_Vulkan::VulkanCore::Render(GLFWwindow* window, const glm::vec4& color
 void KGR::_Vulkan::VulkanCore::Destroy()
 {
 	device.Get().waitIdle();
-
+	syncObject.ClearAll();
 	commandBuffers.Clear();
 }
 

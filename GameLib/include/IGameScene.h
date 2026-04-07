@@ -57,8 +57,9 @@ struct GameSceneManager : public SceneManager
 	}
 	void Destroy() override
 	{
-		SceneManager::Destroy();
 		m_window->Destroy();
+
+		SceneManager::Destroy();
 		KGR::RenderWindow::End();
 	}
 	void ChangeScene(const ChangeSceneEvent& event)
@@ -143,7 +144,7 @@ struct IGameScene : public Scene
 				m_window->RegisterText(ui, transform, text);
 			}
 		}
-		m_window->Render({ 0.53f, 0.81f, 0.92f, 1.0f });
+		m_window->Render({ 0.007, 0.003f, 0.009f , 1});
 	}
 protected:
 	ecsType m_ecs;
@@ -173,7 +174,7 @@ struct GameScene : public IGameScene
 			CameraComponent cam = CameraComponent::Create(glm::radians(45.0f), m_window->GetSize().x, m_window->GetSize().y, 0.01f, 100000.0f, CameraComponent::Type::Perspective);
 			TransformComponent transform;
 			// create a transform and set pos and dir 
-			transform.SetPosition({ 0,3,5 });
+			transform.SetPosition({ 0,0,0 });
 			transform.LookAt({ 0,0,0 });
 			// now create an entity , an alias here std::uint64_t
 			auto e = m_ecs.CreateEntity();
@@ -181,7 +182,60 @@ struct GameScene : public IGameScene
 			// now move the component into the ecs
 			m_ecs.AddComponents(e, std::move(cam), std::move(transform));
 		}
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 50.0f, 50.0f});
+			// here the scale
+			ui.SetScale({ 486.0f,177.0f });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/score.png", m_window->App());
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+			//TextComp text;
+			////text.text.font = &FontLoader::Load("Fonts/arial.ttf", m_window->App());
+			//text.text.SetText("je pense donc je suis !\nje mange des arbres ");
+			//text.text.textTexture = &TextureLoader::Load("Textures/viking_room.png", m_window->App());
+			//text.text.SetAlign(Text::Align::Center);
 
+
+
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture)/*, std::move(text)*/);
+
+		}
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 92.0f, 79.0f });
+			// here the scale
+			ui.SetScale({ 394.0f,101.0f });
+			// create a texture but be aware that only the first texture in the component will be use 
+
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+			TextComp text;
+			text.text.font = &FontLoader::Load("Fonts/Lazer84.ttf", m_window->App(),6);
+			text.text.SetText("je pense donc je suis !\nje mange des arbres ");
+			text.text.SetAlign(Text::Align::Center);
+			text.text.textTexture = &TextureLoader::Load("Textures/PBC.png", m_window->App());
+
+
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(text));
+
+		}
 
 		
 		
@@ -278,28 +332,7 @@ struct GameScene : public IGameScene
 			m_ecs.AddComponents(e, std::move(lc), std::move(transform));
 		}
 
-		// ui ( not fully operational)
-		{
-			// you need texture transform and ui component
-			// for the transform it only use for the rotation 
-			TransformComponent2d transform;
-			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
-			//transform.SetRotation(glm::radians(-45.0f));
-			// create your ui with a virtual resolution and an anchor default center
-			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
-			// here set the position in the virtual resolution
-			ui.SetPos({ 0, 0 });
-			// here the scale
-			ui.SetScale({ 200,200 });
-			// create a texture but be aware that only the first texture in the component will be use 
-			TextureComponent texture;
-			texture.texture = &TextureLoader::Load("Textures/texture.jpg", m_window->App());
-
-			// same as always 
-			auto e = m_ecs.CreateEntity();
-			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}));
-
-		}
+	
 	}
 	void Update(float dt) override
 	{
