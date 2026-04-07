@@ -193,6 +193,9 @@ protected:
 	KGR::RenderWindow* m_window;
 };
 
+static constexpr float centerOffset = 7.5f;
+static constexpr glm::vec3 worldCenter = {0,0,0};
+static constexpr float offsetMove = 1.5f;
 
 struct GameScene : public IGameScene
 {
@@ -252,7 +255,7 @@ struct GameScene : public IGameScene
 
 			// create the transform and set all the data
 			TransformComponent transform_down;
-			transform_down.SetPosition({ 0,-1,0 });
+			transform_down.SetPosition(worldCenter + glm::vec3{0,-1,0} * centerOffset);
 			transform_down.SetScale({ 6.0f,0.3f,20.0f });
 			// same create an entity / id
 			auto e_down = m_ecs.CreateEntity();
@@ -318,7 +321,7 @@ struct GameScene : public IGameScene
 			collider.collider = &ColliderManager::Load("plateformUp", platform_up.mesh);
 
 			TransformComponent transform_up;
-			transform_up.SetPosition({ 0,6,0 });
+			transform_up.SetPosition(worldCenter + glm::vec3{ 0,1,0 } * centerOffset);
 			transform_up.SetScale({ 6.0f,0.3f,20.0f });
 
 			auto e_up = m_ecs.CreateEntity();
@@ -350,7 +353,7 @@ struct GameScene : public IGameScene
 			collider.collider = &ColliderManager::Load("plateformLeft", platform_left.mesh);
 
 			TransformComponent transform_left;
-			transform_left.SetPosition({ -5,2,0 });
+			transform_left.SetPosition(worldCenter + glm::vec3{ -1,0,0 } * centerOffset);
 			transform_left.SetScale({ 6.0f,0.3f,20.0f });
 			transform_left.RotateEuler<RotData::Orientation::Roll>(glm::radians(90.0f));
 
@@ -383,7 +386,7 @@ struct GameScene : public IGameScene
 			collider.collider = &ColliderManager::Load("plateformRight", platform_right.mesh);
 
 			TransformComponent transform_right;
-			transform_right.SetPosition({ 5,2,0 });
+			transform_right.SetPosition(worldCenter + glm::vec3{ 1,0,0 } * centerOffset);
 			transform_right.SetScale({ 6.0f,0.3f,20.0f });
 			transform_right.RotateEuler<RotData::Orientation::Roll>(glm::radians(-90.0f));
 
@@ -401,7 +404,7 @@ struct GameScene : public IGameScene
 			LightComponent<LightData::Type::Directional> lc = LightComponent<LightData::Type::Directional>::Create({ 1,1,1 }, { 1,1,1 }, 100.0f);
 			// set the transform but certain light need dir some position or both so just use what necessary 
 			TransformComponent transform;
-			transform.SetPosition({ 0,5,0 });
+			transform.SetPosition(worldCenter + glm::vec3{ 0,1,0 } * centerOffset);
 			transform.LookAtDir({ 0,-1,0 });
 			// same 
 			auto e = m_ecs.CreateEntity();
@@ -416,7 +419,7 @@ struct GameScene : public IGameScene
 			LightComponent<LightData::Type::Directional> lc = LightComponent<LightData::Type::Directional>::Create({ 1,1,1 }, { 1,1,1 }, 100.0f);
 			// set the transform but certain light need dir some position or both so just use what necessary 
 			TransformComponent transform;
-			transform.SetPosition({ 0,5,0 });
+			transform.SetPosition(worldCenter + glm::vec3{ 0,-1,0 } * centerOffset);
 			transform.LookAtDir({ 0,1,0 });
 			// same 
 			auto e = m_ecs.CreateEntity();
@@ -430,7 +433,7 @@ struct GameScene : public IGameScene
 			LightComponent<LightData::Type::Directional> lc = LightComponent<LightData::Type::Directional>::Create({ 1,1,1 }, { 1,1,1 }, 100.0f);
 			// set the transform but certain light need dir some position or both so just use what necessary 
 			TransformComponent transform;
-			transform.SetPosition({ 0,5,0 });
+			transform.SetPosition(worldCenter + glm::vec3{ -1,0,0 } * centerOffset);
 			transform.LookAtDir({ 1,0,0 });
 			// same 
 			auto e = m_ecs.CreateEntity();
@@ -444,7 +447,7 @@ struct GameScene : public IGameScene
 			LightComponent<LightData::Type::Directional> lc = LightComponent<LightData::Type::Directional>::Create({ 1,1,1 }, { 1,1,1 }, 100.0f);
 			// set the transform but certain light need dir some position or both so just use what necessary 
 			TransformComponent transform;
-			transform.SetPosition({ 0,5,0 });
+			transform.SetPosition(worldCenter + glm::vec3{ -1,0,0 } * centerOffset);
 			transform.LookAtDir({ -1,0,0 });
 			// same 
 			auto e = m_ecs.CreateEntity();
@@ -452,28 +455,6 @@ struct GameScene : public IGameScene
 			m_ecs.AddComponents(e, std::move(lc), std::move(transform));
 		}
 
-		// ui ( not fully operational)
-		{
-			// you need texture transform and ui component
-			// for the transform it only use for the rotation 
-			TransformComponent2d transform;
-			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
-			//transform.SetRotation(glm::radians(-45.0f));
-			// create your ui with a virtual resolution and an anchor default center
-			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
-			// here set the position in the virtual resolution
-			ui.SetPos({ 0, 0 });
-			// here the scale
-			ui.SetScale({ 200,200 });
-			// create a texture but be aware that only the first texture in the component will be use 
-			TextureComponent texture;
-			texture.texture = &TextureLoader::Load("Textures/texture.jpg", m_window->App());
-
-			// same as always 
-			auto e = m_ecs.CreateEntity();
-			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}));
-
-		}
 	}
 	void Update(float dt) override
 	{
@@ -500,17 +481,17 @@ struct GameScene : public IGameScene
 						if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
 							playerComp.StartDir = DirectionState::HAUT;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = 0;
+							PlayerTargetPos.x = worldCenter.x;
 						}
 						if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
 							playerComp.StartDir = DirectionState::GAUCHE;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = 2.5f;
+							PlayerTargetPos.y = worldCenter.y ;
 						}
 						if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
 							playerComp.StartDir = DirectionState::DROITE;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = 2.5f;
+							PlayerTargetPos.y = worldCenter.y;
 						}
 
 						switch (playerComp.StartPos)
@@ -518,31 +499,31 @@ struct GameScene : public IGameScene
 						case PositionState::CENTRE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.x = -1.30f;
+								PlayerTargetPos.x = worldCenter.x - offsetMove;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.x = -1.30f;
+								PlayerTargetPos.x = worldCenter.x- offsetMove;
 							}
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos.x = 1.30f;
+								PlayerTargetPos.x = worldCenter.x + offsetMove;
 							}
 							break;
 						case PositionState::GAUCHE:
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = 0;
+								PlayerTargetPos.x = worldCenter.x;
 							}
 							break;
 						case PositionState::DROITE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = 0;
+								PlayerTargetPos.x = worldCenter.x;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = 0;
+								PlayerTargetPos.x = worldCenter.x;
 							}
 							break;
 						}
@@ -552,17 +533,17 @@ struct GameScene : public IGameScene
 						if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
 							playerComp.StartDir = DirectionState::GAUCHE;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = 2.5f;
+							PlayerTargetPos.y = worldCenter.y;
 						}
 						if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
 							playerComp.StartDir = DirectionState::BAS;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = 0;
+							PlayerTargetPos.x = worldCenter.x;
 						}
 						if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
 							playerComp.StartDir = DirectionState::DROITE;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = 2.5f;
+							PlayerTargetPos.y = worldCenter.y;
 						}
 
 						switch (playerComp.StartPos)
@@ -570,31 +551,31 @@ struct GameScene : public IGameScene
 						case PositionState::CENTRE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.x = 1.30f;
+								PlayerTargetPos.x = worldCenter.x + offsetMove;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.x = 1.30f;
+								PlayerTargetPos.x = worldCenter.x + offsetMove;
 							}
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos.x = -1.30f;
+								PlayerTargetPos.x = worldCenter.x - offsetMove;
 							}
 							break;
 						case PositionState::GAUCHE:
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = 0;
+								PlayerTargetPos.x = worldCenter.x;
 							}
 							break;
 						case PositionState::DROITE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = 0;
+								PlayerTargetPos.x = worldCenter.x;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = 0;
+								PlayerTargetPos.x = worldCenter.x;
 							}
 							break;
 						}
@@ -604,17 +585,17 @@ struct GameScene : public IGameScene
 						if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
 							playerComp.StartDir = DirectionState::HAUT;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = 0;
+							PlayerTargetPos.x = worldCenter.x;
 						}
 						if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
 							playerComp.StartDir = DirectionState::BAS;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = 0;
+							PlayerTargetPos.x = worldCenter.x;
 						}
 						if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
 							playerComp.StartDir = DirectionState::DROITE;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = 2.5;
+							PlayerTargetPos.y = worldCenter.y;
 						}
 
 						switch (playerComp.StartPos)
@@ -622,31 +603,31 @@ struct GameScene : public IGameScene
 						case PositionState::CENTRE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.y = 3.80f;
+								PlayerTargetPos.y = worldCenter.y + offsetMove;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.y = 3.80f;
+								PlayerTargetPos.y = worldCenter.y + offsetMove;
 							}
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos.y = 1.20f;
+								PlayerTargetPos.y = worldCenter.y - offsetMove ;
 							}
 							break;
 						case PositionState::GAUCHE:
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = 2.5f;
+								PlayerTargetPos.y = worldCenter.y;
 							}
 							break;
 						case PositionState::DROITE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = 2.5f;
+								PlayerTargetPos.y = worldCenter.y ;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = 2.5f;
+								PlayerTargetPos.y = worldCenter.y ;
 							}
 							break;
 						}
@@ -656,17 +637,17 @@ struct GameScene : public IGameScene
 						if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
 							playerComp.StartDir = DirectionState::HAUT;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = 0.0f;
+							PlayerTargetPos.x = worldCenter.x;
 						}
 						if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
 							playerComp.StartDir = DirectionState::GAUCHE;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = 2.5f;
+							PlayerTargetPos.y = worldCenter.y;
 						}
 						if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
 							playerComp.StartDir = DirectionState::BAS;
 							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = 0.0f;
+							PlayerTargetPos.x = worldCenter.x;
 						}
 
 						switch (playerComp.StartPos)
@@ -674,31 +655,31 @@ struct GameScene : public IGameScene
 						case PositionState::CENTRE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.y = 1.20f;
+								PlayerTargetPos.y = worldCenter.y - offsetMove;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.y = 1.20f;
+								PlayerTargetPos.y = worldCenter.y - offsetMove;
 							}
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos.y = 3.80f;
+								PlayerTargetPos.y = worldCenter.y + offsetMove;
 							}
 							break;
 						case PositionState::GAUCHE:
 							if (input->IsKeyPressed(KGR::Key::D)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = 2.5f;
+								PlayerTargetPos.y = worldCenter.y;
 							}
 							break;
 						case PositionState::DROITE:
 							if (input->IsKeyPressed(KGR::Key::Q)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = 2.5f;
+								PlayerTargetPos.y = worldCenter.y;
 							}
 							if (input->IsKeyPressed(KGR::Key::A)) {
 								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = 2.5f;
+								PlayerTargetPos.y = worldCenter.y;
 							}
 							break;
 						}
@@ -733,27 +714,28 @@ struct GameScene : public IGameScene
 				for (const auto& camEntity : camView)
 				{
 					auto& camTransform = m_ecs.GetComponent<TransformComponent>(camEntity);
-
+					static constexpr float zValue = worldCenter.z + centerOffset  ;
+					static constexpr float attenuationFactor = 3.0f;
 					switch (playerComp.StartDir)
 					{
 					case DirectionState::BAS:
-						camTargetPos = { 0,3,7 };
-						camTargetLook = { 0, -5, -8 };
+						camTargetPos = worldCenter + glm::vec3{ 0,centerOffset / attenuationFactor,zValue };
+						camTargetLook = worldCenter + glm::vec3{ 0,-centerOffset / attenuationFactor,-zValue };
 						break;
 
 					case DirectionState::HAUT:
-						camTargetPos = { 0,3,7 };
-						camTargetLook = { 0, 5, -8 };
+						camTargetPos = worldCenter + glm::vec3{ 0,-centerOffset / attenuationFactor,zValue };
+						camTargetLook = worldCenter + glm::vec3{ 0,centerOffset / attenuationFactor,-zValue };
 						break;
 
 					case DirectionState::GAUCHE:
-						camTargetPos = { 0,3,7 };
-						camTargetLook = { -10, 0, -8 };
+						camTargetPos = worldCenter + glm::vec3{ centerOffset / attenuationFactor,0,zValue };
+						camTargetLook = worldCenter + glm::vec3{ -centerOffset / attenuationFactor,0,-zValue };
 						break;
 
 					case DirectionState::DROITE:
-						camTargetPos = { 0,3,7 };
-						camTargetLook = { 10, 0, -8 };
+						camTargetPos = worldCenter + glm::vec3{ -centerOffset / attenuationFactor,0,zValue };
+						camTargetLook = worldCenter + glm::vec3{ centerOffset / attenuationFactor,0,-zValue };
 						break;
 					}
 
