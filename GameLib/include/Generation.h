@@ -15,6 +15,10 @@
 
 struct PlatFormMove
 {};
+struct LifeTimeComp
+{
+	bool isDead = false;
+};
 
 using my_ecsType = KGR::ECS::Registry<KGR::ECS::Entity::_64, 100>;
 
@@ -102,7 +106,7 @@ static glm::vec3 Generate(GenBindRegistry& reg, my_ecsType& ecs,const PosMapper&
 				transform.RotateEuler<RotData::Orientation::Roll>(mapper.radAngle);
 
 				auto e_left = ecs.CreateEntity();
-				ecs.AddComponents(e_left, std::move(obstacle), std::move(tex), std::move(transform), std::move(collider), PlatFormMove{});
+				ecs.AddComponents(e_left, std::move(obstacle), std::move(tex), std::move(transform), std::move(collider), PlatFormMove{},LifeTimeComp{});
 			}
 
 			
@@ -145,7 +149,7 @@ static glm::vec3 Generate(GenBindRegistry& reg, my_ecsType& ecs,const PosMapper&
 
 				auto e_left = ecs.CreateEntity();
 
-				ecs.AddComponents(e_left, std::move(obstacle), std::move(tex), std::move(transform), std::move(collider), PlatFormMove{});
+				ecs.AddComponents(e_left, std::move(obstacle), std::move(tex), std::move(transform), std::move(collider), PlatFormMove{}, LifeTimeComp{});
 			}
 
 
@@ -186,7 +190,7 @@ static glm::vec3 Generate(GenBindRegistry& reg, my_ecsType& ecs,const PosMapper&
 
 				auto e_left = ecs.CreateEntity();
 
-				ecs.AddComponents(e_left, std::move(obstacle), std::move(tex), std::move(transform), std::move(collider), PlatFormMove{});
+				ecs.AddComponents(e_left, std::move(obstacle), std::move(tex), std::move(transform), std::move(collider), PlatFormMove{}, LifeTimeComp{});
 			}
 
 
