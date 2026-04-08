@@ -538,25 +538,25 @@ struct GameScene : public IGameScene
 					|| playerComp.StartDir == DirectionState::GAUCHE || playerComp.StartDir == DirectionState::DROITE))
 				{ 
 					playerComp.StartDir = DirectionState::HAUT;
-					playerComp.StartPos = PositionState::CENTRE;
+					//playerComp.StartPos = PositionState::CENTRE;
 				};
 				if (input->IsKeyPressed(KGR::Key::Down_arrow) && (playerComp.StartDir == DirectionState::HAUT
 					|| playerComp.StartDir == DirectionState::GAUCHE || playerComp.StartDir == DirectionState::DROITE))
 				{
 					playerComp.StartDir = DirectionState::BAS;
-					playerComp.StartPos = PositionState::CENTRE;
+					//playerComp.StartPos = PositionState::CENTRE;
 				};
 				if (input->IsKeyPressed(KGR::Key::Left_arrow) && (playerComp.StartDir == DirectionState::BAS
 					|| playerComp.StartDir == DirectionState::HAUT || playerComp.StartDir == DirectionState::DROITE))
 				{
 					playerComp.StartDir = DirectionState::GAUCHE;
-					playerComp.StartPos = PositionState::CENTRE;
+					//playerComp.StartPos = PositionState::CENTRE;
 				};
 				if (input->IsKeyPressed(KGR::Key::Right_arrow) && (playerComp.StartDir == DirectionState::BAS
 					|| playerComp.StartDir == DirectionState::HAUT || playerComp.StartDir == DirectionState::GAUCHE))
 				{
 					playerComp.StartDir = DirectionState::DROITE;
-					playerComp.StartPos = PositionState::CENTRE;
+					//playerComp.StartPos = PositionState::CENTRE;
 				};
 
 
