@@ -565,9 +565,6 @@ int KGR::_Vulkan::VulkanCore::BeginRendering(GLFWwindow* window, vk::raii::Comma
 {
 	// Note: inFlightFences, presentCompleteSemaphores, and commandBuffers are indexed by frameIndex,
 	//       while renderFinishedSemaphores is indexed by imageIndex
-	
-	auto fenceResult = device.Get().waitForFences(*syncObject.GetCurrentFence(), vk::True, UINT64_MAX);
-	device.Get().resetFences(*syncObject.GetCurrentFence());
 
 	std::uint32_t result = syncObject.AcquireNextImage(&swapChain, &device);
 
@@ -836,13 +833,16 @@ void KGR::_Vulkan::VulkanCore::Render(GLFWwindow* window, const glm::vec4& color
 		throw std::runtime_error("need to register Camera");
 
 	auto currentBuffer = &commandBuffers.Acquire(&device);
+
+	auto fenceResult = device.Get().waitForFences(*syncObject.GetCurrentFence(), vk::True, UINT64_MAX);
+	device.Get().resetFences(*syncObject.GetCurrentFence());
+
 	syncObject.Clear();
-
-
-
 
 	currentBuffer->reset();
 	currentBuffer->begin({});
+
+
 
 	{
 		size_t Size = sizeof(UniformBufferObject);
@@ -890,6 +890,7 @@ void KGR::_Vulkan::VulkanCore::Render(GLFWwindow* window, const glm::vec4& color
 		syncObject.Add(std::move(stagingUbo));
 	}
 
+	
 	// --- OFFSCREEN PASS ---------------------------------------------------
 	// When an OffscreenTarget is provided we render the 3D scene into it
 	// BEFORE acquiring the swapchain image.  Both passes share the same
@@ -903,8 +904,6 @@ void KGR::_Vulkan::VulkanCore::Render(GLFWwindow* window, const glm::vec4& color
 	// If we rendered to offscreen, the swapchain only needs the ImGui layer.
 	// Pass a neutral clear colour so we don't see the scene painted twice.
 	glm::vec4 swapchainClear = offscreen ? glm::vec4(0.0f, 0.0f, 0.0f, 1.0f) : color;
-
-	
 	int result = BeginRendering(window, currentBuffer, &graphicsPipeline, swapchainClear);
 	if (result == -1)
 	{
