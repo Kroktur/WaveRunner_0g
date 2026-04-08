@@ -95,3 +95,8 @@ void KGR::_Vulkan::SyncObject::Clear()
 	buffersToClear[m_frameIndex].clear();
 }
 
+void KGR::_Vulkan::SyncObject::ClearAll()
+{
+	buffersToClear.clear();
+}
+

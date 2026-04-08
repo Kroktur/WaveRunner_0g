@@ -106,6 +106,7 @@ namespace KGR
 
 			void Add(Buffer&& buffer);
 			void Clear();
+			void ClearAll();
 		private:
 
 			/**
