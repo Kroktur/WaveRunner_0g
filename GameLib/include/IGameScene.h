@@ -28,6 +28,9 @@
 #include "Math/SAT.h"
 #include <iostream>
 
+
+#include "Generation.h"
+
 using ecsType = KGR::ECS::Registry<KGR::ECS::Entity::_64, 100>;
 
 glm::vec3 camCurrentPos = { 0,8,15 };
@@ -75,6 +78,7 @@ struct Plateform
 {
 
 };
+
 
 struct Obstacle
 {
@@ -364,7 +368,7 @@ struct GameScene : public IGameScene
 
 		{
 			MeshComponent platform_up;
-			platform_up.mesh = &MeshLoader::Load("Models/cube.obj", m_window->App());
+			platform_up.mesh = &MeshLoader::Load("Models/CUBE.obj", m_window->App());
 
 			MaterialComponent text_up;
 
@@ -396,7 +400,7 @@ struct GameScene : public IGameScene
 
 		{
 			MeshComponent platform_left;
-			platform_left.mesh = &MeshLoader::Load("Models/cube.obj", m_window->App());
+			platform_left.mesh = &MeshLoader::Load("Models/CUBE.obj", m_window->App());
 
 			MaterialComponent text_left;
 
@@ -457,7 +461,7 @@ struct GameScene : public IGameScene
 
 			auto e_right = m_ecs.CreateEntity();
 
-			m_ecs.AddComponents(e_right, std::move(platform_right), std::move(text_right), std::move(transform_right), std::move(collider), Plateform{});
+			//m_ecs.AddComponents(e_right, std::move(platform_right), std::move(text_right), std::move(transform_right), std::move(collider), Plateform{});
 		}
 
 		
@@ -519,6 +523,24 @@ struct GameScene : public IGameScene
 			// same
 			m_ecs.AddComponents(e, std::move(lc), std::move(transform));
 		}
+
+
+
+		GenBindRegistry reg;
+		reg.Register('c', "Models/CUBE.obj");
+
+		PosMapper mapper;
+		
+		mapper.midPos = worldCenter + centerOffset * glm::vec3{ 1,0,0 } - glm::vec3{ 0,0.0f,-20.0f };
+		mapper.radAngle = glm::radians(-90.0f);
+		mapper.offset = offsetMove;
+		mapper.rightVec = glm::vec3{ 0,1,0 };
+
+		SimpleTab tab;
+		for (int i = 0; i < 150; i += 3)
+			tab.array[i] = 'c';
+
+		Generate(reg, m_ecs, mapper, tab, *m_window);
 
 	}
 	void Update(float dt) override
@@ -879,6 +901,43 @@ struct GameScene : public IGameScene
 
 					}
 					
+				}
+				{
+					auto plateforms = m_ecs.GetAllComponentsView<PlatFormMove, TransformComponent, CollisionComp>();
+					for (auto p : plateforms)
+					{
+						auto& tP = m_ecs.GetComponent<TransformComponent>(p);
+						auto& colP = m_ecs.GetComponent<CollisionComp>(p);
+
+						auto pOBB = colP.collider->ComputeGlobalOBB(
+							tP.GetScale(), tP.GetPosition(), tP.GetOrientation());
+
+						auto collision = KGR::SeparatingAxisTheorem::CheckCollisionOBB3D(boxOBB, pOBB);
+						if (collision.IsColliding() && gravity.getVelocity() >= 0.0f)
+						{
+							glm::vec3 playerPosDist = transform.GetPosition() - tP.GetPosition();
+							bool isGroundSide = glm::dot(playerPosDist, dir) < 0;
+							bool isFalling = gravity.getVelocity() >= 0.0f;
+
+							if (isGroundSide && isFalling)
+							{
+								transform.Translate(-move);
+								boxOBB = colision.collider->ComputeGlobalOBB(
+									transform.GetScale(), transform.GetPosition(), transform.GetOrientation());
+								grounded = true;
+								gravity.resetVelocity();
+							}
+							else if (!isGroundSide)
+							{
+								transform.Translate(-move);
+								boxOBB = colision.collider->ComputeGlobalOBB(
+									transform.GetScale(), transform.GetPosition(), transform.GetOrientation());
+								gravity.resetVelocity();
+							}
+
+						}
+
+					}
 				}
 				gravity.setIsGround(grounded);
 
