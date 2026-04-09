@@ -5,7 +5,6 @@
 
 #include "Audio/SoundComponent.h"
 #include "Core/SceneManager.h"
-#include "Core/Scene.h"
 #include "Tools/Random.h"
 #include "Core/Window.h"
 #include "ECS/Entities.h"
@@ -71,9 +70,12 @@ struct Pos
 	glm::vec2 position;
 };
 
-static constexpr float centerOffset = 7.5f;
+static constexpr float centerOffset = 5.0f;
 static constexpr glm::vec3 worldCenter = { 0,0,0 };
-static constexpr float offsetMove = 1.5f;
+static constexpr float offsetMove = 1.0f;
+static constexpr float genNeeded = -50;
+static constexpr float zValue = worldCenter.z + centerOffset;
+static constexpr float attenuationFactor = 3.0f;
 
 const std::array<Pos, 12> Positions =
 { {
@@ -253,18 +255,13 @@ protected:
 	KGR::RenderWindow* m_window;
 };
 
-static constexpr float centerOffset = 5.0f;
-static constexpr glm::vec3 worldCenter = {0,0,0};
-static constexpr float offsetMove = 1.0f;
-static constexpr float genNeeded = -50;
-static constexpr float zValue = worldCenter.z + centerOffset;
-static constexpr float attenuationFactor = 3.0f;
+
 
 struct GameScene : public IGameScene
 {
 	float spawnTimer = 0.0f;
 	float spawnInterval = 2.0f;
-	float obstacleCount = 0;
+	int obstacleCount = 0;
 	float lastZ = zValue;
 	GenBindRegistry reg;
 	GameScene(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time) {}
@@ -541,7 +538,7 @@ struct GameScene : public IGameScene
 
 		reg.Register('c', "Models/Obstacles/bloc_1x1.obj");
 
-
+		}
 	}
 	void Update(float dt) override
 	{
@@ -618,10 +615,6 @@ struct GameScene : public IGameScene
 			}
 
 			
-
-
-
-
 
 
 		}
@@ -883,6 +876,7 @@ struct GameScene : public IGameScene
 								gravity.resetVelocity();
 							}
 
+
 						}
 
 					}
@@ -919,37 +913,37 @@ struct GameScene : public IGameScene
 
 		////////////////////////////////////////////////////////////////////
 
-		spawnTimer += dt;
-		if (spawnTimer >= spawnInterval)
-		{
-			spawnTimer = 0.0f;
-			spawnObstacle();
-		}
+		//spawnTimer += dt;
+		//if (spawnTimer >= spawnInterval)
+		//{
+		//	spawnTimer = 0.0f;
+		//	spawnObstacle();
+		//}
 
-		glm::vec3 playerPos(0.0f);
-		auto playerView = m_ecs.GetAllComponentsView<playerComponent, TransformComponent>();
-		for (auto& player : playerView)
-			playerPos = m_ecs.GetComponent<TransformComponent>(player).GetPosition();
-		std::vector<decltype(m_ecs.CreateEntity())> toDestroy;
+		//glm::vec3 playerPos(0.0f);
+		//auto playerView = m_ecs.GetAllComponentsView<playerComponent, TransformComponent>();
+		//for (auto& player : playerView)
+		//	playerPos = m_ecs.GetComponent<TransformComponent>(player).GetPosition();
+		//std::vector<decltype(m_ecs.CreateEntity())> toDestroy;
 
-		auto obsView = m_ecs.GetAllComponentsView<Obstacle, TransformComponent>();
+		//auto obsView = m_ecs.GetAllComponentsView<Obstacle, TransformComponent>();
 
-		for (auto obstacle : obsView)
-		{
-			auto& obsTransform = m_ecs.GetComponent<TransformComponent>(obstacle);
-			auto& obs = m_ecs.GetComponent<Obstacle>(obstacle);
+		//for (auto obstacle : obsView)
+		//{
+		//	auto& obsTransform = m_ecs.GetComponent<TransformComponent>(obstacle);
+		//	auto& obs = m_ecs.GetComponent<Obstacle>(obstacle);
 
-			obsTransform.Translate({ worldCenter.x,worldCenter.y, obs.velocityObstacle * dt });
+		//	obsTransform.Translate({ worldCenter.x,worldCenter.y, obs.velocityObstacle * dt });
 
-			if (obsTransform.GetPosition().z > 10.0f)
-			{
-				toDestroy.push_back(obstacle);
-				continue;
-			}
-		}
+		//	if (obsTransform.GetPosition().z > 10.0f)
+		//	{
+		//		toDestroy.push_back(obstacle);
+		//		continue;
+		//	}
+		//}
 
-		for (auto& obstacle : toDestroy)
-			m_ecs.DestroyEntity(obstacle);
+		//for (auto& obstacle : toDestroy)
+		//	m_ecs.DestroyEntity(obstacle);
 
 		{
 			auto input = m_window->GetInputManager();
@@ -1019,7 +1013,7 @@ struct GameScene : public IGameScene
 		transform.SetScale({ 0.8, 0.8, 0.8 });
 
 		CollisionComp collider;
-		static constexpr int sizeName = 30;
+		static constexpr int sizeName = 20;
 		std::string nameCollision = "obstacle_" + std::to_string(obstacleCount% sizeName);
 		obstacleCount++;
 
@@ -1031,30 +1025,30 @@ struct GameScene : public IGameScene
 
 	////////////////////////////////////////////////////////////////////
 
-	void spawnObstacle()
-	{
-		float lanesX[3] = { -1.3f, 0.0f, 1.3f };
-		float lanesY[3] = { 1.2f, 2.5f, 3.8f };
+	//void spawnObstacle()
+	//{
+	//	float lanesX[3] = { -1.3f, 0.0f, 1.3f };
+	//	float lanesY[3] = { 1.2f, 2.5f, 3.8f };
 
-		std::vector<std::pair<std::string, std::string>> mesh =
-		{
-			{"Models/cube.obj", "Textures/bloc_BaseColor_Emissive.png"}
-			 //{"Models/cube.obj", "Textures/test_mat_bc.png"}
-			//,{ "Models/all_obstacle.obj", "Textures/test_mat_bc.png"}
-			//,{"Models/bloc_L1_H1.obj", "Textures/test_mat_bc.png"}
-		};
+	//	std::vector<std::pair<std::string, std::string>> mesh =
+	//	{
+	//		{"Models/cube.obj", "Textures/bloc_BaseColor_Emissive.png"}
+	//		 //{"Models/cube.obj", "Textures/test_mat_bc.png"}
+	//		//,{ "Models/all_obstacle.obj", "Textures/test_mat_bc.png"}
+	//		//,{"Models/bloc_L1_H1.obj", "Textures/test_mat_bc.png"}
+	//	};
 
 
-		int randomMeshBas = rand() % mesh.size();
-		int randomMeshHaut = rand() % mesh.size();
-		int randomMeshDroite = rand() % mesh.size();
-		int randomMeshGauche = rand() % mesh.size();
+	//	int randomMeshBas = rand() % mesh.size();
+	//	int randomMeshHaut = rand() % mesh.size();
+	//	int randomMeshDroite = rand() % mesh.size();
+	//	int randomMeshGauche = rand() % mesh.size();
 
-		spawnColision({ lanesX[rand() % 3],  0.0f, -20.0f }, mesh[randomMeshBas].first, mesh[randomMeshBas].second);
-		spawnColision({ lanesX[rand() % 3],   6.0f, -20.0f }, mesh[randomMeshHaut].first, mesh[randomMeshHaut].second);
-		spawnColision({ -7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshGauche].first, mesh[randomMeshGauche].second);
-		spawnColision({ 7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshDroite].first, mesh[randomMeshDroite].second);
-	}
+	//	spawnColision({ lanesX[rand() % 3],  0.0f, -20.0f }, mesh[randomMeshBas].first, mesh[randomMeshBas].second);
+	//	spawnColision({ lanesX[rand() % 3],   6.0f, -20.0f }, mesh[randomMeshHaut].first, mesh[randomMeshHaut].second);
+	//	spawnColision({ -7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshGauche].first, mesh[randomMeshGauche].second);
+	//	spawnColision({ 7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshDroite].first, mesh[randomMeshDroite].second);
+	//}
 };
 
 struct CSComp
