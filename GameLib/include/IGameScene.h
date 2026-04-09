@@ -118,7 +118,8 @@ struct playerComponent
 	glm::vec3 actualPos;
 	glm::vec3 targetPos;
 
-	float life = 3;
+	float life = 5;
+	bool isInvincible = false;
 };
 
 struct Plateform
@@ -615,8 +616,6 @@ struct GameScene : public IGameScene
 			}
 
 			
-
-
 		}
 
 
@@ -887,6 +886,9 @@ struct GameScene : public IGameScene
 
 				/////////////////////////////////////////////////////////////////////////
 
+
+				bool isColiding = false;
+
 				auto obstacles = m_ecs.GetAllComponentsView<Obstacle, TransformComponent, CollisionComp>();
 				for (auto obs : obstacles)
 				{
@@ -897,53 +899,70 @@ struct GameScene : public IGameScene
 						tObs.GetScale(), tObs.GetPosition(), tObs.GetOrientation());
 
 					auto collision = KGR::SeparatingAxisTheorem::CheckCollisionOBB3D(boxOBB, obsOBB);
+
 					if (collision.IsColliding())
 					{
-						std::cout << "argg touche heeuu!" << std::endl;
+						isColiding = true;
+						break;
 					}
+					
+				}
 
+				if (isColiding && !playerComp.isInvincible)
+				{
+					--playerComp.life;
+					std::cout << "player life : " << playerComp.life << std::endl;
+					playerComp.isInvincible = true;
+				}
+				else if (!isColiding)
+				{
+					playerComp.isInvincible = false;
 				}
 
 				////////////////////////////////////////////////////////////////////
 
+				if (playerComp.life <= 0)
+				{
+					playerComp.life = 5;
+					KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ "MenuGO"});
+				}
 			}
-
 
 		}
 
 		////////////////////////////////////////////////////////////////////
 
-		//spawnTimer += dt;
-		//if (spawnTimer >= spawnInterval)
-		//{
-		//	spawnTimer = 0.0f;
-		//	spawnObstacle();
-		//}
+		spawnTimer += dt;
+		if (spawnTimer >= spawnInterval)
+		{
+			spawnTimer = 0.0f;
+			spawnObstacle();
+		}
 
-		//glm::vec3 playerPos(0.0f);
-		//auto playerView = m_ecs.GetAllComponentsView<playerComponent, TransformComponent>();
-		//for (auto& player : playerView)
-		//	playerPos = m_ecs.GetComponent<TransformComponent>(player).GetPosition();
-		//std::vector<decltype(m_ecs.CreateEntity())> toDestroy;
+		glm::vec3 playerPos(0.0f);
+		auto playerView = m_ecs.GetAllComponentsView<playerComponent, TransformComponent>();
+		for (auto& player : playerView)
+			playerPos = m_ecs.GetComponent<TransformComponent>(player).GetPosition();
+		std::vector<decltype(m_ecs.CreateEntity())> toDestroy;
 
-		//auto obsView = m_ecs.GetAllComponentsView<Obstacle, TransformComponent>();
+		auto obsView = m_ecs.GetAllComponentsView<Obstacle, TransformComponent>();
 
-		//for (auto obstacle : obsView)
-		//{
-		//	auto& obsTransform = m_ecs.GetComponent<TransformComponent>(obstacle);
-		//	auto& obs = m_ecs.GetComponent<Obstacle>(obstacle);
+		for (auto obstacle : obsView)
+		{
+			auto& obsTransform = m_ecs.GetComponent<TransformComponent>(obstacle);
+			auto& obs = m_ecs.GetComponent<Obstacle>(obstacle);
 
-		//	obsTransform.Translate({ worldCenter.x,worldCenter.y, obs.velocityObstacle * dt });
+			obsTransform.Translate({ worldCenter.x,worldCenter.y, obs.velocityObstacle * dt });
 
-		//	if (obsTransform.GetPosition().z > 10.0f)
-		//	{
-		//		toDestroy.push_back(obstacle);
-		//		continue;
-		//	}
-		//}
+			if (obsTransform.GetPosition().z > 10.0f)
+			{
+				toDestroy.push_back(obstacle);
+				continue;
+			}
+		}
 
-		//for (auto& obstacle : toDestroy)
-		//	m_ecs.DestroyEntity(obstacle);
+		for (auto& obstacle : toDestroy)
+			m_ecs.DestroyEntity(obstacle);
 
 		{
 			auto input = m_window->GetInputManager();
@@ -981,6 +1000,8 @@ struct GameScene : public IGameScene
 			}
 		}
 		
+
+
 
 	}
 	void Render() override
@@ -1023,32 +1044,33 @@ struct GameScene : public IGameScene
 		m_ecs.AddComponents(e, std::move(mesh), std::move(material), std::move(transform), std::move(collider), Obstacle{});
 	};
 
+
 	////////////////////////////////////////////////////////////////////
 
-	//void spawnObstacle()
-	//{
-	//	float lanesX[3] = { -1.3f, 0.0f, 1.3f };
-	//	float lanesY[3] = { 1.2f, 2.5f, 3.8f };
+	void spawnObstacle()
+	{
+		float lanesX[3] = { -1.3f, 0.0f, 1.3f };
+		float lanesY[3] = { 1.2f, 2.5f, 3.8f };
 
-	//	std::vector<std::pair<std::string, std::string>> mesh =
-	//	{
-	//		{"Models/cube.obj", "Textures/bloc_BaseColor_Emissive.png"}
-	//		 //{"Models/cube.obj", "Textures/test_mat_bc.png"}
-	//		//,{ "Models/all_obstacle.obj", "Textures/test_mat_bc.png"}
-	//		//,{"Models/bloc_L1_H1.obj", "Textures/test_mat_bc.png"}
-	//	};
+		std::vector<std::pair<std::string, std::string>> mesh =
+		{
+			{"Models/cube.obj", "Textures/bloc_BaseColor_Emissive.png"}
+			 //{"Models/cube.obj", "Textures/test_mat_bc.png"}
+			//,{ "Models/all_obstacle.obj", "Textures/test_mat_bc.png"}
+			//,{"Models/bloc_L1_H1.obj", "Textures/test_mat_bc.png"}
+		};
 
 
-	//	int randomMeshBas = rand() % mesh.size();
-	//	int randomMeshHaut = rand() % mesh.size();
-	//	int randomMeshDroite = rand() % mesh.size();
-	//	int randomMeshGauche = rand() % mesh.size();
+		int randomMeshBas = rand() % mesh.size();
+		int randomMeshHaut = rand() % mesh.size();
+		int randomMeshDroite = rand() % mesh.size();
+		int randomMeshGauche = rand() % mesh.size();
 
-	//	spawnColision({ lanesX[rand() % 3],  0.0f, -20.0f }, mesh[randomMeshBas].first, mesh[randomMeshBas].second);
-	//	spawnColision({ lanesX[rand() % 3],   6.0f, -20.0f }, mesh[randomMeshHaut].first, mesh[randomMeshHaut].second);
-	//	spawnColision({ -7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshGauche].first, mesh[randomMeshGauche].second);
-	//	spawnColision({ 7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshDroite].first, mesh[randomMeshDroite].second);
-	//}
+		spawnColision({ lanesX[rand() % 3],  0.0f, -20.0f }, mesh[randomMeshBas].first, mesh[randomMeshBas].second);
+		spawnColision({ lanesX[rand() % 3],   6.0f, -20.0f }, mesh[randomMeshHaut].first, mesh[randomMeshHaut].second);
+		spawnColision({ -7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshGauche].first, mesh[randomMeshGauche].second);
+		spawnColision({ 7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshDroite].first, mesh[randomMeshDroite].second);
+	}
 };
 
 struct CSComp
@@ -1056,10 +1078,12 @@ struct CSComp
 	std::string targetScene;
 };
 
-struct MenuScene : public IGameScene
+struct Logo{};
+
+struct MenuPlay : public IGameScene
 {
 
-	MenuScene(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time) {}
+	MenuPlay(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time) {}
 
 	void Init(SceneManager* manager) override
 	{
@@ -1089,19 +1113,42 @@ struct MenuScene : public IGameScene
 			// create your ui with a virtual resolution and an anchor default center
 			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::Center);
 			// here set the position in the virtual resolution
-			ui.SetPos({ 1920.0f / 2.0f, 1080.0f / 2.0f });
+			ui.SetPos({ 1920/2,1080/2 });
 			// here the scale
-			ui.SetScale({ 500,500 });
+			ui.SetScale({ 1900,1080 });
 			// create a texture but be aware that only the first texture in the component will be use 
 			TextureComponent texture;
-			texture.texture = &TextureLoader::Load("Textures/texture.jpg", m_window->App());
+			texture.texture = &TextureLoader::Load("Textures/Menu_BG_without_logo.png", m_window->App());
 			CSComp comp;
-			comp.targetScene = "Game";
+			comp.targetScene = "MenuGO";
 			// same as always 
 			auto e = m_ecs.CreateEntity();
 			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp));
 
 		}
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::Center);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 1920 / 2,1080 / 2 });
+			// here the scale
+			ui.SetScale({ 1900,1080 });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/logo.png", m_window->App());
+			CSComp comp;
+			comp.targetScene = "MenuGO";
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp), Logo{});
+
+		}
+		
 		// TODO create backGround
 	}
 	void Update(float dt) override
@@ -1122,14 +1169,144 @@ struct MenuScene : public IGameScene
 				auto& u = m_ecs.GetComponent<UiComponent>(e);
 				t.Update(u.GetPosNdc(aspectRatio), u.GetScaleNdc(aspectRatio));
 
+				u.SetColor({ 1,1,1,1 });
+				
 				if (t.aabb.IsColliding(mouseinAR))
 				{
-					u.SetColor({ 1,0,0,1 });
 					if (m_window->GetInputManager()->IsMousePressed(KGR::Mouse::Left))
 						KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ m_ecs.GetComponent<CSComp>(e).targetScene });
 				}
-				else
-					u.SetColor({ 0,1,0,1 });
+			}
+		}
+	}
+
+
+};
+
+struct button{};
+
+struct MenuGO : public IGameScene
+{
+
+	MenuGO(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time) {}
+
+	void Init(SceneManager* manager) override
+	{
+		IGameScene::Init(manager);
+
+		{
+			// a calera need a cameraComponent that can be orthographic or perspective and a transform
+
+			// create the camera with the fov , the size of the window (must be updated ) and the far and near rendering and the mode 
+			CameraComponent cam = CameraComponent::Create(glm::radians(45.0f), m_window->GetSize().x, m_window->GetSize().y, 0.01f, 100.0f, CameraComponent::Type::Perspective);
+			TransformComponent transform;
+			// create a transform and set pos and dir 
+			transform.SetPosition({ 0,3,5 });
+			transform.LookAt({ 0,0,0 });
+			// now create an entity , an alias here std::uint64_t
+			auto e = m_ecs.CreateEntity();
+
+			// now move the component into the ecs
+			m_ecs.AddComponents(e, std::move(cam), std::move(transform));
+		}
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::Center);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 1920 / 2,1080 / 2 });
+			// here the scale
+			ui.SetScale({ 1900,1080 });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Menu_BG.png", m_window->App());
+			CSComp comp;
+			comp.targetScene = "Game";
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp));
+
+		}
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::Center);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 1920 / 2,1080 / 2 });
+			// here the scale
+			ui.SetScale({ 1900,1080 });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Menu_window.png", m_window->App());
+			CSComp comp;
+			comp.targetScene = "Game";
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp), Logo{});
+
+		}
+		{
+			TransformComponent2d transform;
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::Center);
+			ui.SetPos({ 596, 500 });
+			ui.SetScale({ 600,150 });
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Play button.png", m_window->App());
+			CSComp comp;
+			comp.targetScene = "Game";
+			auto e = m_ecs.CreateEntity();
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp), button{});
+
+		}
+		{
+			TransformComponent2d transform;
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::Center);
+			ui.SetPos({ 596, 700 });
+			ui.SetScale({ 600,150 });
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Quit button.png", m_window->App());
+			CSComp comp;
+			comp.targetScene = "Game";
+			auto e = m_ecs.CreateEntity();
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp), button{});
+
+		}
+		// TODO create backGround
+	}
+	void Update(float dt) override
+	{
+		IGameScene::Update(dt);
+		// TODO click on button
+
+		{
+
+			auto mousePos = m_window->GetInputManager()->GetMousePosition();
+			float aspectRatio = static_cast<float>(m_window->GetSize().x) / static_cast<float>(m_window->GetSize().y);
+			auto mouseinAR = UiComponent::VrToNdc(mousePos, m_window->GetSize(), aspectRatio, false);
+
+			auto es = m_ecs.GetAllComponentsView<CollisionComp2d, UiComponent, CSComp, button>();
+			for (auto e : es)
+			{
+				auto& t = m_ecs.GetComponent<CollisionComp2d>(e);
+				auto& u = m_ecs.GetComponent<UiComponent>(e);
+				t.Update(u.GetPosNdc(aspectRatio), u.GetScaleNdc(aspectRatio));
+
+				u.SetColor({ 1,1,1,1 });
+
+
+				if (t.aabb.IsColliding(mouseinAR))
+				{
+					if (m_window->GetInputManager()->IsMousePressed(KGR::Mouse::Left))
+						KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ m_ecs.GetComponent<CSComp>(e).targetScene });
+				}
 			}
 		}
 	}
