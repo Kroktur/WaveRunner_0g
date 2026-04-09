@@ -54,6 +54,47 @@ struct SimpleTab
 	std::array<char, height* width> array;
 };
 
+struct TabSystem
+{
+	static SimpleTab Load(const std::filesystem::path& path)
+	{
+		SimpleTab result;
+		std::ifstream file(path);
+		std::string tag = {};
+		std::getline(file, tag);
+		if (tag != Tag())
+			throw std::out_of_range("size incompatible");
+
+		for (int i = 0; i < 50; ++i)
+		{
+			int left = i * 3 + 0;
+			int mid = i * 3 + 1;
+			int right = i * 3 + 2;
+
+			std::string line = {};
+			std::getline(file, line);
+			if (line.empty())
+				throw std::out_of_range("error no line found");
+
+			char lineLeft = line[2];
+			char lineMid = line[1];
+			char lineRight = line[0];
+
+			result.array[left] = lineLeft == '#' ? ' ' : lineLeft;
+			result.array[mid] = lineMid == '#' ? ' ' : lineMid;
+			result.array[right] = lineRight == '#' ? ' ' : lineRight;
+		}
+		file.close();
+
+		return result;
+	}
+private:
+	static std::string Tag()
+	{
+		return "Gen : " + std::to_string(50);
+	}
+};
+
 
 struct PosMapper
 {
@@ -198,6 +239,19 @@ static glm::vec3 Generate(GenBindRegistry& reg, my_ecsType& ecs,const PosMapper&
 	
 }
 	
+std::unique_ptr<SimpleTab> LoadGen(const std::string& filePath);
 
+inline std::unique_ptr<SimpleTab> LoadGen(const std::string& filePath)
+{
+	auto res = TabSystem::Load(filePath);
+	std::unique_ptr<SimpleTab> result = std::make_unique<SimpleTab>(); 
+	result->array = res.array;
+	return std::move(result);
+}
+
+using GenLoader =
+KGR::ResourceManager<SimpleTab,
+	KGR::TypeWrapper<>,
+	LoadGen>;
 
 

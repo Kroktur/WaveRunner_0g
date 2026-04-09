@@ -209,7 +209,7 @@ protected:
 	KGR::RenderWindow* m_window;
 };
 
-static constexpr float centerOffset = 5.0f;
+static constexpr float centerOffset = 4.0f;
 static constexpr glm::vec3 worldCenter = {0,0,0};
 static constexpr float offsetMove = 1.0f;
 static constexpr float genNeeded = -50;
@@ -232,7 +232,7 @@ struct GameScene : public IGameScene
 			// a calera need a cameraComponent that can be orthographic or perspective and a transform
 
 			// create the camera with the fov , the size of the window (must be updated ) and the far and near rendering and the mode 
-			CameraComponent cam = CameraComponent::Create(glm::radians(90.0f), m_window->GetSize().x, m_window->GetSize().y, 0.01f, 100.0f, CameraComponent::Type::Perspective);
+			CameraComponent cam = CameraComponent::Create(glm::radians(90.0f), m_window->GetSize().x, m_window->GetSize().y, 0.01f, 200.0f, CameraComponent::Type::Perspective);
 			TransformComponent transform;
 			// create a transform and set pos and dir 
 			transform.SetPosition({ 0,0,0 });
@@ -305,8 +305,8 @@ struct GameScene : public IGameScene
 
 			// create a mesh and load it with the cash loader
 			MeshComponent platform_down;
-			platform_down.mesh = &MeshLoader::Load("Models/cube.obj", m_window->App());
-
+			platform_down.mesh = &MeshLoader::Load("Models/Enviro/floor.obj", m_window->App());
+	
 			// create a texture 
 			MaterialComponent text_down;
 			// allocate the size of the texture must be the same as the number of submeshes 
@@ -315,10 +315,10 @@ struct GameScene : public IGameScene
 			for (int i = 0; i < platform_down.mesh->GetSubMeshesCount(); ++i)
 			{
 				Material mat_down;
-				mat_down.baseColor = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", m_window->App());
-				mat_down.emissive = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", m_window->App());
-				mat_down.normalMap = &TextureLoader::Load("Textures/bloc_Normal.png", m_window->App());
-				mat_down.pbrMap = &TextureLoader::Load("Textures/bloc_ORM.png", m_window->App());
+				mat_down.baseColor = &TextureLoader::Load("Textures/Obstacles/BaseColor.png", m_window->App());
+				mat_down.emissive = &TextureLoader::Load("Textures/Obstacles/Emissive.png", m_window->App());
+				mat_down.normalMap = &TextureLoader::Load("Textures/Obstacles/Normal.png", m_window->App());
+				mat_down.pbrMap = &TextureLoader::Load("Textures/Obstacles/ORM.png", m_window->App());
 
 				text_down.materials[i] = mat_down;
 			}
@@ -329,7 +329,7 @@ struct GameScene : public IGameScene
 			// create the transform and set all the data
 			TransformComponent transform_down;
 			transform_down.SetPosition(worldCenter + glm::vec3{0,-1,0} * centerOffset);
-			transform_down.SetScale({ 6.0f,0.3f,20.0f });
+			transform_down.SetScale({ 1.0f,1.0f,1.0f });
 			// same create an entity / id
 			auto e_down = m_ecs.CreateEntity();
 			// fill the component
@@ -338,25 +338,32 @@ struct GameScene : public IGameScene
 
 		{
 			MeshComponent player;
-			player.mesh = &MeshLoader::Load("Models/cube.obj", m_window->App());
+			player.mesh = &MeshLoader::Load("Models/Perso/mesh.obj", m_window->App());
 
 			MaterialComponent text_player;
 
-			text_player.materials.resize(player.mesh->GetSubMeshesCount());
+			text_player.materials.resize(2);
 
-			for (int i = 0; i < player.mesh->GetSubMeshesCount(); ++i)
-			{
+			
 				Material mat_player;
-				mat_player.baseColor = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", m_window->App());
-				mat_player.emissive = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", m_window->App());
-				mat_player.normalMap = &TextureLoader::Load("Textures/bloc_Normal.png", m_window->App());
-				mat_player.pbrMap = &TextureLoader::Load("Textures/bloc_ORM.png", m_window->App());
+				mat_player.baseColor = &TextureLoader::Load("Textures/Perso/BaseColor.png", m_window->App());
+				mat_player.emissive = &TextureLoader::Load("Textures/Perso/Emissive.png", m_window->App());
+				mat_player.normalMap = &TextureLoader::Load("Textures/Perso/Normal.png", m_window->App());
+				mat_player.pbrMap = &TextureLoader::Load("Textures/Perso/ORM.png", m_window->App());
 
-				text_player.materials[i] = mat_player;
-			}
+
+				text_player.materials[0] = mat_player;
+				mat_player.baseColor = &TextureLoader::Load("Textures/Trotti/BaseColor.png", m_window->App());
+				mat_player.emissive = &TextureLoader::Load("Textures/Trotti/Emissive.png", m_window->App());
+				mat_player.normalMap = &TextureLoader::Load("Textures/Trotti/Normal.png", m_window->App());
+				mat_player.pbrMap = &TextureLoader::Load("Textures/Trotti/ORM.png", m_window->App());
+
+				text_player.materials[1] = mat_player;
+			
 			TransformComponent transform_player;
-			transform_player.SetPosition({ 0,0,2 });
-			transform_player.SetScale({ 0.5f,0.5f,0.5f });
+			transform_player.SetPosition(worldCenter);
+			transform_player.SetScale({ 1.0f,1.0f,1.0f });
+			transform_player.SetRotation({ 0.0f,0.0f,glm::radians(180.0f) });
 
 			controlComponentPlayer player_input;
 			playerComponent player_comp;
@@ -372,7 +379,7 @@ struct GameScene : public IGameScene
 
 		{
 			MeshComponent platform_up;
-			platform_up.mesh = &MeshLoader::Load("Models/CUBE.obj", m_window->App());
+			platform_up.mesh = &MeshLoader::Load("Models/Enviro/floor.obj", m_window->App());
 
 			MaterialComponent text_up;
 
@@ -381,10 +388,10 @@ struct GameScene : public IGameScene
 			for (int i = 0; i < platform_up.mesh->GetSubMeshesCount(); ++i)
 			{
 				Material mat_up;
-				mat_up.baseColor = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", m_window->App());
-				mat_up.emissive = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", m_window->App());
-				mat_up.normalMap = &TextureLoader::Load("Textures/bloc_Normal.png", m_window->App());
-				mat_up.pbrMap = &TextureLoader::Load("Textures/bloc_ORM.png", m_window->App());
+				mat_up.baseColor = &TextureLoader::Load("Textures/Obstacles/BaseColor.png", m_window->App());
+				mat_up.emissive = &TextureLoader::Load("Textures/Obstacles/Emissive.png", m_window->App());
+				mat_up.normalMap = &TextureLoader::Load("Textures/Obstacles/Normal.png", m_window->App());
+				mat_up.pbrMap = &TextureLoader::Load("Textures/Obstacles/ORM.png", m_window->App());
 
 				text_up.materials[i] = mat_up;
 			}
@@ -395,7 +402,8 @@ struct GameScene : public IGameScene
 
 			TransformComponent transform_up;
 			transform_up.SetPosition(worldCenter + glm::vec3{ 0,1,0 } * centerOffset);
-			transform_up.SetScale({ 6.0f,0.3f,20.0f });
+			transform_up.SetScale({ 1.0f,1.0f,1.0f });
+			transform_up.RotateEuler<RotData::Orientation::Roll>(glm::radians(180.0f));
 
 			auto e_up = m_ecs.CreateEntity();
 
@@ -404,7 +412,7 @@ struct GameScene : public IGameScene
 
 		{
 			MeshComponent platform_left;
-			platform_left.mesh = &MeshLoader::Load("Models/CUBE.obj", m_window->App());
+			platform_left.mesh = &MeshLoader::Load("Models/Enviro/floor.obj", m_window->App());;
 
 			MaterialComponent text_left;
 
@@ -413,10 +421,10 @@ struct GameScene : public IGameScene
 			for (int i = 0; i < platform_left.mesh->GetSubMeshesCount(); ++i)
 			{
 				Material mat_left;
-				mat_left.baseColor = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", m_window->App());
-				mat_left.emissive = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", m_window->App());
-				mat_left.normalMap = &TextureLoader::Load("Textures/bloc_Normal.png", m_window->App());
-				mat_left.pbrMap = &TextureLoader::Load("Textures/bloc_ORM.png", m_window->App());
+				mat_left.baseColor = &TextureLoader::Load("Textures/Obstacles/BaseColor.png", m_window->App());
+				mat_left.emissive = &TextureLoader::Load("Textures/Obstacles/Emissive.png", m_window->App());
+				mat_left.normalMap = &TextureLoader::Load("Textures/Obstacles/Normal.png", m_window->App());
+				mat_left.pbrMap = &TextureLoader::Load("Textures/Obstacles/ORM.png", m_window->App());
 
 				text_left.materials[i] = mat_left;
 			}
@@ -427,7 +435,7 @@ struct GameScene : public IGameScene
 
 			TransformComponent transform_left;
 			transform_left.SetPosition(worldCenter + glm::vec3{ -1,0,0 } * centerOffset);
-			transform_left.SetScale({ 6.0f,0.3f,20.0f });
+			transform_left.SetScale({ 1.0f,1.0f,1.0f });
 			transform_left.RotateEuler<RotData::Orientation::Roll>(glm::radians(90.0f));
 
 			auto e_left = m_ecs.CreateEntity();
@@ -437,7 +445,7 @@ struct GameScene : public IGameScene
 
 		{
 			MeshComponent platform_right;
-			platform_right.mesh = &MeshLoader::Load("Models/cube.obj", m_window->App());
+			platform_right.mesh = &MeshLoader::Load("Models/Enviro/floor.obj", m_window->App());;
 
 			MaterialComponent text_right;
 
@@ -446,10 +454,10 @@ struct GameScene : public IGameScene
 			for (int i = 0; i < platform_right.mesh->GetSubMeshesCount(); ++i)
 			{
 				Material mat_right;
-				mat_right.baseColor = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", m_window->App());
-				mat_right.emissive = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", m_window->App());
-				mat_right.normalMap = &TextureLoader::Load("Textures/bloc_Normal.png", m_window->App());
-				mat_right.pbrMap = &TextureLoader::Load("Textures/bloc_ORM.png", m_window->App());
+				mat_right.baseColor = &TextureLoader::Load("Textures/Obstacles/BaseColor.png", m_window->App());
+				mat_right.emissive = &TextureLoader::Load("Textures/Obstacles/Emissive.png", m_window->App());
+				mat_right.normalMap = &TextureLoader::Load("Textures/Obstacles/Normal.png", m_window->App());
+				mat_right.pbrMap = &TextureLoader::Load("Textures/Obstacles/ORM.png", m_window->App());
 
 				text_right.materials[i] = mat_right;
 			}
@@ -460,73 +468,101 @@ struct GameScene : public IGameScene
 
 			TransformComponent transform_right;
 			transform_right.SetPosition(worldCenter + glm::vec3{ 1,0,0 } * centerOffset);
-			transform_right.SetScale({ 6.0f,0.3f,20.0f });
+			transform_right.SetScale({ 1.0f,1.0f,1.0f });
 			transform_right.RotateEuler<RotData::Orientation::Roll>(glm::radians(-90.0f));
 
 			auto e_right = m_ecs.CreateEntity();
 
 			m_ecs.AddComponents(e_right, std::move(platform_right), std::move(text_right), std::move(transform_right), std::move(collider), Plateform{});
 		}
+		{
+			MeshComponent backGround;
+			backGround.mesh = &MeshLoader::Load("Models/BackGround/mesh.obj", m_window->App());;
 
+			MaterialComponent text_right;
+
+			text_right.materials.resize(backGround.mesh->GetSubMeshesCount());
+
+			for (int i = 0; i < backGround.mesh->GetSubMeshesCount(); ++i)
+			{
+				Material mat_right;
+				mat_right.baseColor = &TextureLoader::Load("Textures/BackGround/BaseColor.png", m_window->App());
+				mat_right.emissive = &TextureLoader::Load("Textures/BackGround/Emissive.png", m_window->App());
+				mat_right.normalMap = &TextureLoader::Load("Textures/BackGround/Normal.png", m_window->App());
+				mat_right.pbrMap = &TextureLoader::Load("Textures/BackGround/ORM.png", m_window->App());
+
+				text_right.materials[i] = mat_right;
+			}
+
+
+			
+
+			TransformComponent transform_right;
+			transform_right.SetPosition(worldCenter - glm::vec3{0.0f, 0.0f, zValue});
+			transform_right.SetScale({ 1.0f,1.0f,1.0f });
+
+			auto e_right = m_ecs.CreateEntity();
+
+			m_ecs.AddComponents(e_right, std::move(backGround), std::move(text_right), std::move(transform_right), Plateform{});
+		}
 		
 
 		// light
 		{
 			// the light need transform component and light component
 			// all lights type have their own system to create them go in the file to understand
-			LightComponent<LightData::Type::Directional> lc = LightComponent<LightData::Type::Directional>::Create({ 1,1,1 }, { 1,1,1 }, 100.0f);
+			LightComponent<LightData::Type::Point> lc = LightComponent<LightData::Type::Point>::Create({ 1,1,1 }, { 1,1,1 },100.0f, 100.0f);
 			// set the transform but certain light need dir some position or both so just use what necessary 
 			TransformComponent transform;
-			transform.SetPosition(worldCenter + glm::vec3{ 0,1,0 } * centerOffset);
-			transform.LookAtDir({ 0,-1,0 });
+			transform.SetPosition(worldCenter);
 			// same 
 			auto e = m_ecs.CreateEntity();
 			// same
 			m_ecs.AddComponents(e, std::move(lc), std::move(transform));
 		}
 
-		// light
-		{
-			// the light need transform component and light component
-			// all lights type have their own system to create them go in the file to understand
-			LightComponent<LightData::Type::Directional> lc = LightComponent<LightData::Type::Directional>::Create({ 1,1,1 }, { 1,1,1 }, 100.0f);
-			// set the transform but certain light need dir some position or both so just use what necessary 
-			TransformComponent transform;
-			transform.SetPosition(worldCenter + glm::vec3{ 0,-1,0 } * centerOffset);
-			transform.LookAtDir({ 0,1,0 });
-			// same 
-			auto e = m_ecs.CreateEntity();
-			// same
-			m_ecs.AddComponents(e, std::move(lc), std::move(transform));
-		}
-		// light
-		{
-			// the light need transform component and light component
-			// all lights type have their own system to create them go in the file to understand
-			LightComponent<LightData::Type::Directional> lc = LightComponent<LightData::Type::Directional>::Create({ 1,1,1 }, { 1,1,1 }, 100.0f);
-			// set the transform but certain light need dir some position or both so just use what necessary 
-			TransformComponent transform;
-			transform.SetPosition(worldCenter + glm::vec3{ -1,0,0 } * centerOffset);
-			transform.LookAtDir({ 1,0,0 });
-			// same 
-			auto e = m_ecs.CreateEntity();
-			// same
-			m_ecs.AddComponents(e, std::move(lc), std::move(transform));
-		}
-		// light
-		{
-			// the light need transform component and light component
-			// all lights type have their own system to create them go in the file to understand
-			LightComponent<LightData::Type::Directional> lc = LightComponent<LightData::Type::Directional>::Create({ 1,1,1 }, { 1,1,1 }, 100.0f);
-			// set the transform but certain light need dir some position or both so just use what necessary 
-			TransformComponent transform;
-			transform.SetPosition(worldCenter + glm::vec3{ -1,0,0 } * centerOffset);
-			transform.LookAtDir({ -1,0,0 });
-			// same 
-			auto e = m_ecs.CreateEntity();
-			// same
-			m_ecs.AddComponents(e, std::move(lc), std::move(transform));
-		}
+		//// light
+		//{
+		//	// the light need transform component and light component
+		//	// all lights type have their own system to create them go in the file to understand
+		//	LightComponent<LightData::Type::Directional> lc = LightComponent<LightData::Type::Directional>::Create({ 1,1,1 }, { 1,1,1 }, 100.0f);
+		//	// set the transform but certain light need dir some position or both so just use what necessary 
+		//	TransformComponent transform;
+		//	transform.SetPosition(worldCenter + glm::vec3{ 0,-1,0 } * centerOffset);
+		//	transform.LookAtDir({ 0,1,0 });
+		//	// same 
+		//	auto e = m_ecs.CreateEntity();
+		//	// same
+		//	m_ecs.AddComponents(e, std::move(lc), std::move(transform));
+		//}
+		//// light
+		//{
+		//	// the light need transform component and light component
+		//	// all lights type have their own system to create them go in the file to understand
+		//	LightComponent<LightData::Type::Directional> lc = LightComponent<LightData::Type::Directional>::Create({ 1,1,1 }, { 1,1,1 }, 100.0f);
+		//	// set the transform but certain light need dir some position or both so just use what necessary 
+		//	TransformComponent transform;
+		//	transform.SetPosition(worldCenter + glm::vec3{ -1,0,0 } * centerOffset);
+		//	transform.LookAtDir({ 1,0,0 });
+		//	// same 
+		//	auto e = m_ecs.CreateEntity();
+		//	// same
+		//	m_ecs.AddComponents(e, std::move(lc), std::move(transform));
+		//}
+		//// light
+		//{
+		//	// the light need transform component and light component
+		//	// all lights type have their own system to create them go in the file to understand
+		//	LightComponent<LightData::Type::Directional> lc = LightComponent<LightData::Type::Directional>::Create({ 1,1,1 }, { 1,1,1 }, 100.0f);
+		//	// set the transform but certain light need dir some position or both so just use what necessary 
+		//	TransformComponent transform;
+		//	transform.SetPosition(worldCenter + glm::vec3{ -1,0,0 } * centerOffset);
+		//	transform.LookAtDir({ -1,0,0 });
+		//	// same 
+		//	auto e = m_ecs.CreateEntity();
+		//	// same
+		//	m_ecs.AddComponents(e, std::move(lc), std::move(transform));
+		//}
 
 
 
@@ -547,15 +583,7 @@ struct GameScene : public IGameScene
 				mapper.radAngle = glm::radians(-90.0f);
 				mapper.offset = offsetMove;
 				mapper.rightVec = glm::vec3{ 0,1,0 };
-
-				SimpleTab tab;
-				KGR::Tools::Random rd;
-				for (int i = 0; i < 150; ++i)
-				{
-					if (rd.getRandomNumber(0, 1) == 1)
-						tab.array[i] = 'c';
-				}
-				Generate(reg, m_ecs, mapper, tab, *m_window).z;
+				Generate(reg, m_ecs, mapper, GenLoader::Load("gen.txt"), *m_window).z;
 			}
 			// left
 			{
@@ -564,16 +592,7 @@ struct GameScene : public IGameScene
 				mapper.radAngle = glm::radians(90.0f);
 				mapper.offset = offsetMove;
 				mapper.rightVec = glm::vec3{ 0,1,0 };
-
-				SimpleTab tab;
-				KGR::Tools::Random rd;
-				for (int i = 0; i < 150; ++i)
-				{
-
-					if (rd.getRandomNumber(0, 1) == 1)
-						tab.array[i] = 'c';
-				}
-				Generate(reg, m_ecs, mapper, tab, *m_window).z;
+				Generate(reg, m_ecs, mapper, GenLoader::Load("gen.txt"), *m_window).z;
 			}
 			// up
 			{
@@ -582,14 +601,8 @@ struct GameScene : public IGameScene
 				mapper.radAngle = glm::radians(-180.0f);
 				mapper.offset = offsetMove;
 				mapper.rightVec = glm::vec3{1 ,0,0 };
-				SimpleTab tab;
-				KGR::Tools::Random rd;
-				for (int i = 0; i < 150; ++i)
-				{
-					if (rd.getRandomNumber(0, 1) == 1)
-						tab.array[i] = 'c';
-				}
-				Generate(reg, m_ecs, mapper, tab, *m_window).z;
+				
+				Generate(reg, m_ecs, mapper, GenLoader::Load("gen.txt"), *m_window).z;
 			}
 			//Dawn
 			{
@@ -598,14 +611,8 @@ struct GameScene : public IGameScene
 				mapper.radAngle = 0.0f;
 				mapper.offset = offsetMove;
 				mapper.rightVec = glm::vec3{ 1 ,0,0 };
-				SimpleTab tab;
-				KGR::Tools::Random rd;
-				for (int i = 0; i < 150; ++i)
-				{
-					if (rd.getRandomNumber(0, 1) == 1)
-						tab.array[i] = 'c';
-				}
-				lastZ += Generate(reg, m_ecs, mapper, tab, *m_window).z;
+			
+				lastZ += Generate(reg, m_ecs, mapper, GenLoader::Load("gen.txt"), *m_window).z;
 			}
 
 			
@@ -909,7 +916,7 @@ struct GameScene : public IGameScene
 
 				switch (playerComp.StartDir)
 				{
-				case DirectionState::BAS: dir = { 0,-1,0 }; break;
+				case DirectionState::BAS: dir = { 0,-1,0 };break;
 				case DirectionState::HAUT: dir = { 0,1,0 }; break;
 				case DirectionState::GAUCHE: dir = { -1,0,0 }; break;
 				case DirectionState::DROITE: dir = { 1,0,0 }; break;
@@ -1005,6 +1012,7 @@ struct GameScene : public IGameScene
 
 							if (isGroundSide && isFalling)
 							{
+							
 								transform.Translate(-collision.GetPenetration() * collision.GetCollisionNormal());
 								boxOBB = colision.collider->ComputeGlobalOBB(
 									transform.GetScale(), transform.GetPosition(), transform.GetOrientation());
