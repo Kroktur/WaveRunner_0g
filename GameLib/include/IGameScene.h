@@ -6,7 +6,7 @@
 #include "Audio/SoundComponent.h"
 #include "Core/SceneManager.h"
 #include "Core/Scene.h"
-
+#include "Tools/Random.h"
 #include "Core/Window.h"
 #include "ECS/Entities.h"
 #include "ECS/Registry.h"
@@ -29,7 +29,10 @@
 #include "Math/SAT.h"
 #include <iostream>
 
-using ecsType = KGR::ECS::Registry<KGR::ECS::Entity::_64, 500>;
+
+#include "Generation.h"
+
+using ecsType = KGR::ECS::Registry<KGR::ECS::Entity::_64, 100>;
 
 glm::vec3 camCurrentPos = { 0,8,15 };
 glm::vec3 camCurrentLook = { 0,-10, 0 };
@@ -120,6 +123,7 @@ struct Plateform
 {
 
 };
+
 
 struct Obstacle
 {
@@ -249,13 +253,20 @@ protected:
 	KGR::RenderWindow* m_window;
 };
 
+static constexpr float centerOffset = 5.0f;
+static constexpr glm::vec3 worldCenter = {0,0,0};
+static constexpr float offsetMove = 1.0f;
+static constexpr float genNeeded = -50;
+static constexpr float zValue = worldCenter.z + centerOffset;
+static constexpr float attenuationFactor = 3.0f;
 
 struct GameScene : public IGameScene
 {
 	float spawnTimer = 0.0f;
 	float spawnInterval = 2.0f;
-	int obstacleCount = 0;
-
+	float obstacleCount = 0;
+	float lastZ = zValue;
+	GenBindRegistry reg;
 	GameScene(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time) {}
 	void Init(SceneManager* manager) override
 	{
@@ -392,7 +403,7 @@ struct GameScene : public IGameScene
 			}
 			TransformComponent transform_player;
 			transform_player.SetPosition({ 0,0,2 });
-			transform_player.SetScale({ 1.0f,1.0f,1.0f });
+			transform_player.SetScale({ 0.5f,0.5f,0.5f });
 
 			controlComponentPlayer player_input;
 			playerComponent player_comp;
@@ -408,7 +419,7 @@ struct GameScene : public IGameScene
 
 		{
 			MeshComponent platform_up;
-			platform_up.mesh = &MeshLoader::Load("Models/cube.obj", m_window->App());
+			platform_up.mesh = &MeshLoader::Load("Models/CUBE.obj", m_window->App());
 
 			MaterialComponent text_up;
 
@@ -440,7 +451,7 @@ struct GameScene : public IGameScene
 
 		{
 			MeshComponent platform_left;
-			platform_left.mesh = &MeshLoader::Load("Models/cube.obj", m_window->App());
+			platform_left.mesh = &MeshLoader::Load("Models/CUBE.obj", m_window->App());
 
 			MaterialComponent text_left;
 
@@ -526,11 +537,95 @@ struct GameScene : public IGameScene
 			auto e = m_ecs.CreateEntity();
 			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}));
 
-		}
+
+
+		reg.Register('c', "Models/Obstacles/bloc_1x1.obj");
+
+
 	}
 	void Update(float dt) override
 	{
 		IGameScene::Update(dt);
+
+		if (lastZ > genNeeded)
+		{
+			//right
+			{
+				PosMapper mapper;
+				mapper.midPos = worldCenter + centerOffset * glm::vec3{ 1,0,0 } + glm::vec3{ 0,0.0f,lastZ };
+				mapper.radAngle = glm::radians(-90.0f);
+				mapper.offset = offsetMove;
+				mapper.rightVec = glm::vec3{ 0,1,0 };
+
+				SimpleTab tab;
+				KGR::Tools::Random rd;
+				for (int i = 0; i < 150; ++i)
+				{
+					if (rd.getRandomNumber(0, 1) == 1)
+						tab.array[i] = 'c';
+				}
+				Generate(reg, m_ecs, mapper, tab, *m_window).z;
+			}
+			// left
+			{
+				PosMapper mapper;
+				mapper.midPos = worldCenter - centerOffset * glm::vec3{ 1,0,0 } + glm::vec3{ 0,0.0f,lastZ };
+				mapper.radAngle = glm::radians(90.0f);
+				mapper.offset = offsetMove;
+				mapper.rightVec = glm::vec3{ 0,1,0 };
+
+				SimpleTab tab;
+				KGR::Tools::Random rd;
+				for (int i = 0; i < 150; ++i)
+				{
+
+					if (rd.getRandomNumber(0, 1) == 1)
+						tab.array[i] = 'c';
+				}
+				Generate(reg, m_ecs, mapper, tab, *m_window).z;
+			}
+			// up
+			{
+				PosMapper mapper;
+				mapper.midPos = worldCenter + centerOffset * glm::vec3{0,1,0 } + glm::vec3{ 0,0.0f,lastZ };
+				mapper.radAngle = glm::radians(-180.0f);
+				mapper.offset = offsetMove;
+				mapper.rightVec = glm::vec3{1 ,0,0 };
+				SimpleTab tab;
+				KGR::Tools::Random rd;
+				for (int i = 0; i < 150; ++i)
+				{
+					if (rd.getRandomNumber(0, 1) == 1)
+						tab.array[i] = 'c';
+				}
+				Generate(reg, m_ecs, mapper, tab, *m_window).z;
+			}
+			//Dawn
+			{
+				PosMapper mapper;
+				mapper.midPos = worldCenter - centerOffset * glm::vec3{ 0,1,0 } + glm::vec3{ 0,0.0f,lastZ };
+				mapper.radAngle = 0.0f;
+				mapper.offset = offsetMove;
+				mapper.rightVec = glm::vec3{ 1 ,0,0 };
+				SimpleTab tab;
+				KGR::Tools::Random rd;
+				for (int i = 0; i < 150; ++i)
+				{
+					if (rd.getRandomNumber(0, 1) == 1)
+						tab.array[i] = 'c';
+				}
+				lastZ += Generate(reg, m_ecs, mapper, tab, *m_window).z;
+			}
+
+			
+
+
+
+
+
+
+		}
+
 
 		{
 			auto es = m_ecs.GetAllComponentsView<TransformComponent, controlComponentPlayer>();
@@ -724,7 +819,7 @@ struct GameScene : public IGameScene
 
 						if (isGroundSide && isFalling)
 						{
-							transform.Translate(-move);
+							transform.Translate(-collision.GetPenetration() * collision.GetCollisionNormal());
 							boxOBB = colision.collider->ComputeGlobalOBB(
 								transform.GetScale(), transform.GetPosition(), transform.GetOrientation());
 							grounded = true;
@@ -732,7 +827,7 @@ struct GameScene : public IGameScene
 						}
 						else if (!isGroundSide)
 						{
-							transform.Translate(-move);
+							transform.Translate(-collision.GetPenetration() * collision.GetCollisionNormal());
 							boxOBB = colision.collider->ComputeGlobalOBB(
 								transform.GetScale(), transform.GetPosition(), transform.GetOrientation());
 							gravity.resetVelocity();
@@ -741,6 +836,59 @@ struct GameScene : public IGameScene
 					}
 
 				}
+
+				{
+					auto plateforms = m_ecs.GetAllComponentsView<PlatFormMove, TransformComponent, CollisionComp,LifeTimeComp>();
+					for (auto p : plateforms)
+					{
+						
+						auto& tP = m_ecs.GetComponent<TransformComponent>(p);
+						tP.Translate(dt
+							* glm::vec3{ 0,0,1 });
+						if (tP.GetPosition().z > zValue)
+							m_ecs.GetComponent<LifeTimeComp>(p).isDead = true;
+					}
+					lastZ += dt * 1.0f;
+					
+					
+					
+					for (auto p : plateforms)
+					{
+						auto& tP = m_ecs.GetComponent<TransformComponent>(p);
+						auto& colP = m_ecs.GetComponent<CollisionComp>(p);
+
+						auto pOBB = colP.collider->ComputeGlobalOBB(
+							tP.GetScale(), tP.GetPosition(), tP.GetOrientation());
+
+						auto collision = KGR::SeparatingAxisTheorem::CheckCollisionOBB3D(boxOBB, pOBB);
+						if (collision.IsColliding() && gravity.getVelocity() >= 0.0f)
+						{
+							glm::vec3 playerPosDist = transform.GetPosition() - tP.GetPosition();
+							bool isGroundSide = glm::dot(playerPosDist, dir) < 0;
+							bool isFalling = gravity.getVelocity() >= 0.0f;
+
+							if (isGroundSide && isFalling)
+							{
+								transform.Translate(-collision.GetPenetration() * collision.GetCollisionNormal());
+								boxOBB = colision.collider->ComputeGlobalOBB(
+									transform.GetScale(), transform.GetPosition(), transform.GetOrientation());
+								grounded = true;
+								gravity.resetVelocity();
+							}
+							else if (!isGroundSide)
+							{
+								transform.Translate(-collision.GetPenetration() * collision.GetCollisionNormal());
+								boxOBB = colision.collider->ComputeGlobalOBB(
+									transform.GetScale(), transform.GetPosition(), transform.GetOrientation());
+								gravity.resetVelocity();
+							}
+
+						}
+
+					}
+					transform.SetPosition(glm::vec3(transform.GetPosition().x, transform.GetPosition().y, worldCenter.z));
+				}
+
 				gravity.setIsGround(grounded);
 
 				/////////////////////////////////////////////////////////////////////////
@@ -765,6 +913,8 @@ struct GameScene : public IGameScene
 				////////////////////////////////////////////////////////////////////
 
 			}
+
+
 		}
 
 		////////////////////////////////////////////////////////////////////
@@ -826,6 +976,17 @@ struct GameScene : public IGameScene
 					u.SetColor({ 0,1,0,1 });
 			}
 		}
+
+
+		{
+			auto es = m_ecs.GetAllComponentsView<LifeTimeComp>();
+			for (auto e : es)
+			{
+				if (m_ecs.GetComponent<LifeTimeComp>(e).isDead)
+					m_ecs.DestroyEntity(e);
+			}
+		}
+		
 
 	}
 	void Render() override
