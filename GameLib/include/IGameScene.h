@@ -1,10 +1,10 @@
+
 #pragma once
 #include "Core/Scene.h"
 #include <filesystem>
 
 #include "Audio/SoundComponent.h"
 #include "Core/SceneManager.h"
-#include "Core/Scene.h"
 #include "Tools/Random.h"
 #include "Core/Window.h"
 #include "ECS/Entities.h"
@@ -36,7 +36,6 @@ using ecsType = KGR::ECS::Registry<KGR::ECS::Entity::_64, 100>;
 glm::vec3 camCurrentPos = { 0,8,15 };
 glm::vec3 camCurrentLook = { 0,-10, 0 };
 float smoothCamSpeed = 2.0f;
-bool isGravity = false;
 
 glm::vec3 PlayerCurrentPos = { 0,0,2 };
 float smoothPlayerSpeed = 6.0f;
@@ -44,7 +43,9 @@ float smoothPlayerSpeed = 6.0f;
 struct controlComponentPlayer
 {
 	glm::vec3 PlayerTargetPos = { 0.0f, 0.0f, 2.0f };
+
 };
+
 
 enum class DirectionState
 {
@@ -62,6 +63,52 @@ enum class PositionState
 	DROITE
 };
 
+
+struct Pos
+{
+	std::pair<DirectionState, PositionState> pairPosition;
+	glm::vec2 position;
+};
+
+static constexpr float centerOffset = 5.0f;
+static constexpr glm::vec3 worldCenter = { 0,0,0 };
+static constexpr float offsetMove = 1.0f;
+static constexpr float genNeeded = -50;
+static constexpr float zValue = worldCenter.z + centerOffset;
+static constexpr float attenuationFactor = 3.0f;
+
+const std::array<Pos, 12> Positions =
+{ {
+	{{DirectionState::BAS, PositionState::GAUCHE},  { worldCenter.x - offsetMove, worldCenter.y }},
+	{{DirectionState::BAS, PositionState::CENTRE},  {worldCenter }},
+	{{DirectionState::BAS, PositionState::DROITE},  {  worldCenter.x + offsetMove, worldCenter.y }},
+
+	{{DirectionState::HAUT, PositionState::GAUCHE},  {  worldCenter.x + offsetMove , worldCenter.y + centerOffset}},
+	{{DirectionState::HAUT, PositionState::CENTRE},  { worldCenter.x, worldCenter.y + centerOffset }},
+	{{DirectionState::HAUT, PositionState::DROITE},  {worldCenter.x - offsetMove, worldCenter.y + centerOffset  }},
+
+	{{DirectionState::GAUCHE, PositionState::GAUCHE},  { -4, worldCenter.y + offsetMove}},
+	{{DirectionState::GAUCHE, PositionState::CENTRE},  { -4, worldCenter.y }},
+	{{DirectionState::GAUCHE, PositionState::DROITE},  { -4, worldCenter.y - offsetMove }},
+
+	{{DirectionState::DROITE, PositionState::GAUCHE},  { 4,  worldCenter.y - offsetMove  }},
+	{{DirectionState::DROITE, PositionState::CENTRE},  { 4,  worldCenter.y  }},
+	{{DirectionState::DROITE, PositionState::DROITE},  { 4, worldCenter.y + offsetMove  }},
+
+} };
+
+glm::vec2 getPosition(DirectionState dir, PositionState pos)
+{
+	for (const auto& posArr : Positions)
+	{
+		if (posArr.pairPosition == std::make_pair(dir, pos))
+		{
+			return posArr.position;
+		}
+	}
+	return { 0.0f, 0.0f };
+}
+
 struct playerComponent
 {
 	DirectionState StartDir = DirectionState::BAS;
@@ -71,7 +118,8 @@ struct playerComponent
 	glm::vec3 actualPos;
 	glm::vec3 targetPos;
 
-	float life = 3;
+	float life = 5;
+	bool isInvincible = false;
 };
 
 struct Plateform
@@ -83,6 +131,7 @@ struct Plateform
 struct Obstacle
 {
 	float velocityObstacle = 6.0f;
+
 };
 
 struct ChangeSceneEvent
@@ -116,8 +165,6 @@ struct GameSceneManager : public SceneManager
 	void Destroy() override
 	{
 		m_window->Destroy();
-
-		SceneManager::Destroy();
 		KGR::RenderWindow::End();
 	}
 	void ChangeScene(const ChangeSceneEvent& event)
@@ -202,25 +249,20 @@ struct IGameScene : public Scene
 				m_window->RegisterText(ui, transform, text);
 			}
 		}
-		m_window->Render({ 0.007, 0.003f, 0.009f , 1});
+		m_window->Render({ 0.007, 0.003f, 0.009f , 1 });
 	}
 protected:
 	ecsType m_ecs;
 	KGR::RenderWindow* m_window;
 };
 
-static constexpr float centerOffset = 4.0f;
-static constexpr glm::vec3 worldCenter = {0,0,0};
-static constexpr float offsetMove = 1.0f;
-static constexpr float genNeeded = -50;
-static constexpr float zValue = worldCenter.z + centerOffset;
-static constexpr float attenuationFactor = 3.0f;
+
 
 struct GameScene : public IGameScene
 {
 	float spawnTimer = 0.0f;
 	float spawnInterval = 2.0f;
-	float obstacleCount = 0;
+	int obstacleCount = 0;
 	float lastZ = zValue;
 	GenBindRegistry reg;
 	GameScene(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time) {}
@@ -235,14 +277,15 @@ struct GameScene : public IGameScene
 			CameraComponent cam = CameraComponent::Create(glm::radians(90.0f), m_window->GetSize().x, m_window->GetSize().y, 0.01f, 200.0f, CameraComponent::Type::Perspective);
 			TransformComponent transform;
 			// create a transform and set pos and dir 
-			transform.SetPosition({ 0,0,0 });
-			transform.LookAt({ 0,0,0 });
+			transform.SetPosition({ 0,5,7 });
+			transform.LookAt({ 0,1,2 });
 			// now create an entity , an alias here std::uint64_t
 			auto e = m_ecs.CreateEntity();
 
 			// now move the component into the ecs
 			m_ecs.AddComponents(e, std::move(cam), std::move(transform));
 		}
+
 		{
 			// you need texture transform and ui component
 			// for the transform it only use for the rotation 
@@ -252,7 +295,7 @@ struct GameScene : public IGameScene
 			// create your ui with a virtual resolution and an anchor default center
 			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
 			// here set the position in the virtual resolution
-			ui.SetPos({ 50.0f, 50.0f});
+			ui.SetPos({ 50.0f, 50.0f });
 			// here the scale
 			ui.SetScale({ 486.0f,177.0f });
 			// create a texture but be aware that only the first texture in the component will be use 
@@ -288,7 +331,7 @@ struct GameScene : public IGameScene
 			// same as always 
 			auto e = m_ecs.CreateEntity();
 			TextComp text;
-			text.text.font = &FontLoader::Load("Fonts/Lazer84.ttf", m_window->App(),6);
+			text.text.font = &FontLoader::Load("Fonts/Lazer84.ttf", m_window->App(), 6);
 			text.text.SetText("je pense donc je suis !\nje mange des arbres ");
 			text.text.SetAlign(Text::Align::Center);
 			text.text.textTexture = &TextureLoader::Load("Textures/PBC.png", m_window->App());
@@ -297,6 +340,8 @@ struct GameScene : public IGameScene
 			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(text));
 
 		}
+
+
 
 
 		// mesh
@@ -328,8 +373,8 @@ struct GameScene : public IGameScene
 
 			// create the transform and set all the data
 			TransformComponent transform_down;
-			transform_down.SetPosition(worldCenter + glm::vec3{0,-1,0} * centerOffset);
-			transform_down.SetScale({ 1.0f,1.0f,1.0f });
+			transform_down.SetPosition(worldCenter + glm::vec3{ 0,-1,0 } *centerOffset);
+			transform_down.SetScale({ 6.0f,0.3f,20.0f });
 			// same create an entity / id
 			auto e_down = m_ecs.CreateEntity();
 			// fill the component
@@ -517,9 +562,7 @@ struct GameScene : public IGameScene
 			transform.SetPosition(worldCenter);
 			// same 
 			auto e = m_ecs.CreateEntity();
-			// same
-			m_ecs.AddComponents(e, std::move(lc), std::move(transform));
-		}
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}));
 
 		//// light
 		//{
@@ -568,7 +611,7 @@ struct GameScene : public IGameScene
 
 		reg.Register('c', "Models/Obstacles/bloc_1x1.obj");
 
-
+		}
 	}
 	void Update(float dt) override
 	{
@@ -616,12 +659,6 @@ struct GameScene : public IGameScene
 			}
 
 			
-
-
-
-
-
-
 		}
 
 
@@ -638,237 +675,97 @@ struct GameScene : public IGameScene
 				auto& gravity = m_ecs.GetComponent<PhysicComponent>(e);
 				auto& colision = m_ecs.GetComponent<CollisionComp>(e);
 
-				//if (!isGravity)
-				//{
-					switch (playerComp.StartDir)
+				// changement de plateformes
+				if (input->IsKeyPressed(KGR::Key::Up_arrow) && (playerComp.StartDir == DirectionState::BAS
+					|| playerComp.StartDir == DirectionState::GAUCHE || playerComp.StartDir == DirectionState::DROITE))
+				{
+					playerComp.StartDir = DirectionState::HAUT;
+					playerComp.StartPos = PositionState::CENTRE;
+				};
+				if (input->IsKeyPressed(KGR::Key::Down_arrow) && (playerComp.StartDir == DirectionState::HAUT
+					|| playerComp.StartDir == DirectionState::GAUCHE || playerComp.StartDir == DirectionState::DROITE))
+				{
+					playerComp.StartDir = DirectionState::BAS;
+					playerComp.StartPos = PositionState::CENTRE;
+				};
+				if (input->IsKeyPressed(KGR::Key::Left_arrow) && (playerComp.StartDir == DirectionState::BAS
+					|| playerComp.StartDir == DirectionState::HAUT || playerComp.StartDir == DirectionState::DROITE))
+				{
+					playerComp.StartDir = DirectionState::GAUCHE;
+					playerComp.StartPos = PositionState::CENTRE;
+				};
+				if (input->IsKeyPressed(KGR::Key::Right_arrow) && (playerComp.StartDir == DirectionState::BAS
+					|| playerComp.StartDir == DirectionState::HAUT || playerComp.StartDir == DirectionState::GAUCHE))
+				{
+					playerComp.StartDir = DirectionState::DROITE;
+					playerComp.StartPos = PositionState::CENTRE;
+				};
+
+
+				// changement de lanes
+				if (input->IsKeyPressed(KGR::Key::Q) || input->IsKeyPressed(KGR::Key::A))
+				{
+					if (playerComp.StartPos == PositionState::DROITE)
 					{
-					case DirectionState::BAS:
-						if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
-							playerComp.StartDir = DirectionState::HAUT;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = worldCenter.x;
-						}
-						if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
-							playerComp.StartDir = DirectionState::GAUCHE;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = worldCenter.y ;
-						}
-						if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
-							playerComp.StartDir = DirectionState::DROITE;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = worldCenter.y;
-						}
-
-						switch (playerComp.StartPos)
-						{
-						case PositionState::CENTRE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.x = worldCenter.x - offsetMove;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.x = worldCenter.x- offsetMove;
-							}
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos.x = worldCenter.x + offsetMove;
-							}
-							break;
-						case PositionState::GAUCHE:
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = worldCenter.x;
-							}
-							break;
-						case PositionState::DROITE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = worldCenter.x;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = worldCenter.x;
-							}
-							break;
-						}
-						break;
-
-					case DirectionState::HAUT:
-						if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
-							playerComp.StartDir = DirectionState::GAUCHE;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = worldCenter.y;
-						}
-						if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
-							playerComp.StartDir = DirectionState::BAS;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = worldCenter.x;
-						}
-						if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
-							playerComp.StartDir = DirectionState::DROITE;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = worldCenter.y;
-						}
-
-						switch (playerComp.StartPos)
-						{
-						case PositionState::CENTRE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.x = worldCenter.x + offsetMove;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.x = worldCenter.x + offsetMove;
-							}
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos.x = worldCenter.x - offsetMove;
-							}
-							break;
-						case PositionState::GAUCHE:
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = worldCenter.x;
-							}
-							break;
-						case PositionState::DROITE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = worldCenter.x;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.x = worldCenter.x;
-							}
-							break;
-						}
-						break;
-
-					case DirectionState::GAUCHE:
-						if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
-							playerComp.StartDir = DirectionState::HAUT;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = worldCenter.x;
-						}
-						if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
-							playerComp.StartDir = DirectionState::BAS;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = worldCenter.x;
-						}
-						if (input->IsKeyPressed(KGR::Key::Right_arrow)) {
-							playerComp.StartDir = DirectionState::DROITE;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = worldCenter.y;
-						}
-
-						switch (playerComp.StartPos)
-						{
-						case PositionState::CENTRE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.y = worldCenter.y + offsetMove;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.y = worldCenter.y + offsetMove;
-							}
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos.y = worldCenter.y - offsetMove ;
-							}
-							break;
-						case PositionState::GAUCHE:
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = worldCenter.y;
-							}
-							break;
-						case PositionState::DROITE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = worldCenter.y ;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = worldCenter.y ;
-							}
-							break;
-						}
-						break;
-
-					case DirectionState::DROITE:
-						if (input->IsKeyPressed(KGR::Key::Up_arrow)) {
-							playerComp.StartDir = DirectionState::HAUT;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = worldCenter.x;
-						}
-						if (input->IsKeyPressed(KGR::Key::Left_arrow)) {
-							playerComp.StartDir = DirectionState::GAUCHE;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.y = worldCenter.y;
-						}
-						if (input->IsKeyPressed(KGR::Key::Down_arrow)) {
-							playerComp.StartDir = DirectionState::BAS;
-							playerComp.StartPos = PositionState::CENTRE;
-							PlayerTargetPos.x = worldCenter.x;
-						}
-
-						switch (playerComp.StartPos)
-						{
-						case PositionState::CENTRE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.y = worldCenter.y - offsetMove;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::GAUCHE;
-								PlayerTargetPos.y = worldCenter.y - offsetMove;
-							}
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::DROITE;
-								PlayerTargetPos.y = worldCenter.y + offsetMove;
-							}
-							break;
-						case PositionState::GAUCHE:
-							if (input->IsKeyPressed(KGR::Key::D)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = worldCenter.y;
-							}
-							break;
-						case PositionState::DROITE:
-							if (input->IsKeyPressed(KGR::Key::Q)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = worldCenter.y;
-							}
-							if (input->IsKeyPressed(KGR::Key::A)) {
-								playerComp.StartPos = PositionState::CENTRE;
-								PlayerTargetPos.y = worldCenter.y;
-							}
-							break;
-						}
-						break;
+						playerComp.StartPos = PositionState::CENTRE;
 					}
-
-					glm::vec3 currentPos = transform.GetPosition();
-
-					switch (playerComp.StartDir)
+					else if (playerComp.StartPos == PositionState::CENTRE)
 					{
-					case DirectionState::BAS:
-					case DirectionState::HAUT:
-						PlayerCurrentPos.x = glm::mix(PlayerCurrentPos.x, PlayerTargetPos.x, smoothPlayerSpeed * dt);
-						currentPos.x = PlayerCurrentPos.x;
-						break;
-
-					case DirectionState::GAUCHE:
-					case DirectionState::DROITE:
-						PlayerCurrentPos.y = glm::mix(PlayerCurrentPos.y, PlayerTargetPos.y, smoothPlayerSpeed * dt);
-						currentPos.y = PlayerCurrentPos.y;
-						break;
+						playerComp.StartPos = PositionState::GAUCHE;
 					}
+				}
+				if (input->IsKeyPressed(KGR::Key::D))
+				{
+					if (playerComp.StartPos == PositionState::GAUCHE)
+					{
+						playerComp.StartPos = PositionState::CENTRE;
+					}
+					else if (playerComp.StartPos == PositionState::CENTRE)
+					{
+						playerComp.StartPos = PositionState::DROITE;
+					}
+				}
+				glm::vec3 collisionScale;
+				if (input->IsKeyDown(KGR::Key::S))
+				{
+					if (playerComp.StartDir == DirectionState::HAUT || playerComp.StartDir == DirectionState::BAS)
+					{
+						collisionScale = glm::vec3{ 1.0f, 0.5f, 1.0f };
+						std::cout << "je me baisse plateforme haut ou bas" << std::endl;
+					}
+					else if(playerComp.StartDir == DirectionState::DROITE || playerComp.StartDir == DirectionState::GAUCHE)
+					{
+						collisionScale = glm::vec3{ 0.5f, 1.0f, 1.0f };
+						std::cout << "je me baisse plateforme gauche ou droite" << std::endl;
+					}
+				}
+				else
+				{
+					collisionScale = transform.GetScale();
+				}
 
-					transform.SetPosition(currentPos);
+				glm::vec2 position = getPosition(playerComp.StartDir, playerComp.StartPos);
+				PlayerTargetPos.x = position.x;
+				PlayerTargetPos.y = position.y;
+
+				glm::vec3 currentPos = transform.GetPosition();
+
+				switch (playerComp.StartDir)
+				{
+				case DirectionState::BAS:
+				case DirectionState::HAUT:
+					PlayerCurrentPos.x = glm::mix(PlayerCurrentPos.x, PlayerTargetPos.x, smoothPlayerSpeed * dt);
+					currentPos.x = PlayerCurrentPos.x;
+					break;
+
+				case DirectionState::GAUCHE:
+				case DirectionState::DROITE:
+					PlayerCurrentPos.y = glm::mix(PlayerCurrentPos.y, PlayerTargetPos.y, smoothPlayerSpeed * dt);
+					currentPos.y = PlayerCurrentPos.y;
+					break;
+				}
+
+				transform.SetPosition(currentPos);
 
 				/*}*/
 
@@ -879,7 +776,8 @@ struct GameScene : public IGameScene
 				for (const auto& camEntity : camView)
 				{
 					auto& camTransform = m_ecs.GetComponent<TransformComponent>(camEntity);
-				
+					static constexpr float zValue = worldCenter.z + centerOffset;
+					static constexpr float attenuationFactor = 3.0f;
 					switch (playerComp.StartDir)
 					{
 					case DirectionState::BAS:
@@ -902,14 +800,11 @@ struct GameScene : public IGameScene
 						camTargetLook = worldCenter + glm::vec3{ centerOffset / attenuationFactor,0,-zValue };
 						break;
 					}
-
 					camCurrentPos = glm::mix(camCurrentPos, camTargetPos, smoothCamSpeed * dt);
 					camCurrentLook = glm::mix(camCurrentLook, camTargetLook, smoothCamSpeed * dt);
 
 					camTransform.SetPosition(camCurrentPos);
 					camTransform.LookAt(camCurrentLook);
-
-					///////////////////////////////////////////////////////////////////////////////
 				}
 
 				glm::vec3 dir(0.0f);
@@ -926,21 +821,18 @@ struct GameScene : public IGameScene
 				if (input->IsKeyDown(KGR::Key::Z) && gravity.getIsGround())
 				{
 					gravity.jump();
-				}				
+				}
 
 				gravity.uptadePhysique(dt);
 				glm::vec3 move = dir * gravity.getVelocity() * dt;
 
-				//if (glm::length(move) < 0.0001f)
-				//	continue;
 
 				transform.Translate(move);
 
 
 				auto boxOBB = colision.collider->ComputeGlobalOBB(
-					transform.GetScale(), transform.GetPosition(), transform.GetOrientation());
+					collisionScale, transform.GetPosition(), transform.GetOrientation());
 
-				//gravity.setIsGround(false);
 
 				bool grounded = false;
 
@@ -977,7 +869,7 @@ struct GameScene : public IGameScene
 						}
 
 					}
-					
+
 				}
 
 				{
@@ -1027,6 +919,7 @@ struct GameScene : public IGameScene
 								gravity.resetVelocity();
 							}
 
+
 						}
 
 					}
@@ -1035,52 +928,92 @@ struct GameScene : public IGameScene
 
 				gravity.setIsGround(grounded);
 
-			}
+				/////////////////////////////////////////////////////////////////////////
 
+
+				bool isColiding = false;
+
+				auto obstacles = m_ecs.GetAllComponentsView<Obstacle, TransformComponent, CollisionComp>();
+				for (auto obs : obstacles)
+				{
+					auto& tObs = m_ecs.GetComponent<TransformComponent>(obs);
+					auto& colObs = m_ecs.GetComponent<CollisionComp>(obs);
+
+					auto obsOBB = colObs.collider->ComputeGlobalOBB(
+						tObs.GetScale(), tObs.GetPosition(), tObs.GetOrientation());
+
+					auto collision = KGR::SeparatingAxisTheorem::CheckCollisionOBB3D(boxOBB, obsOBB);
+
+					if (collision.IsColliding())
+					{
+						isColiding = true;
+						break;
+					}
+					
+				}
+
+				if (isColiding && !playerComp.isInvincible)
+				{
+					--playerComp.life;
+					std::cout << "player life : " << playerComp.life << std::endl;
+					playerComp.isInvincible = true;
+				}
+				else if (!isColiding)
+				{
+					playerComp.isInvincible = false;
+				}
+
+				////////////////////////////////////////////////////////////////////
+
+				if (playerComp.life <= 0)
+				{
+					playerComp.life = 5;
+					KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ "MenuGO"});
+				}
+			}
 
 		}
 
 		////////////////////////////////////////////////////////////////////
 
-		//spawnTimer += dt;
-		//if (spawnTimer >= spawnInterval)
-		//{
-		//	spawnTimer = 0.0f;
-		//	spawnObstacle();
-		//}
+		spawnTimer += dt;
+		if (spawnTimer >= spawnInterval)
+		{
+			spawnTimer = 0.0f;
+			spawnObstacle();
+		}
 
-		//glm::vec3 playerPos(0.0f);
-		//auto playerView = m_ecs.GetAllComponentsView<playerComponent, TransformComponent>();
-		//for (auto& player : playerView)
-		//	playerPos = m_ecs.GetComponent<TransformComponent>(player).GetPosition();
-		//std::vector<decltype(m_ecs.CreateEntity())> toDestroy;
+		glm::vec3 playerPos(0.0f);
+		auto playerView = m_ecs.GetAllComponentsView<playerComponent, TransformComponent>();
+		for (auto& player : playerView)
+			playerPos = m_ecs.GetComponent<TransformComponent>(player).GetPosition();
+		std::vector<decltype(m_ecs.CreateEntity())> toDestroy;
 
-		//auto obsView = m_ecs.GetAllComponentsView<Obstacle, TransformComponent>();
+		auto obsView = m_ecs.GetAllComponentsView<Obstacle, TransformComponent>();
 
-		//for (auto obstacle : obsView)
-		//{
-		//	auto& obsTransform = m_ecs.GetComponent<TransformComponent>(obstacle);
-		//	auto& obs = m_ecs.GetComponent<Obstacle>(obstacle);
-		//	auto& obsCol = m_ecs.GetComponent<CollisionComp>(obstacle);
+		for (auto obstacle : obsView)
+		{
+			auto& obsTransform = m_ecs.GetComponent<TransformComponent>(obstacle);
+			auto& obs = m_ecs.GetComponent<Obstacle>(obstacle);
 
-		//	obsTransform.Translate({ 0.0f, 0.0f, obs.velocityObstacle * dt });
+			obsTransform.Translate({ worldCenter.x,worldCenter.y, obs.velocityObstacle * dt });
 
-		//	if (obsTransform.GetPosition().z > 10.0f)
-		//	{
-		//		toDestroy.push_back(obstacle);
-		//		continue;
-		//	}
-		//}
+			if (obsTransform.GetPosition().z > 10.0f)
+			{
+				toDestroy.push_back(obstacle);
+				continue;
+			}
+		}
 
-		//for (auto& obstacle : toDestroy)
-		//	m_ecs.DestroyEntity(obstacle);
-
+		for (auto& obstacle : toDestroy)
+			m_ecs.DestroyEntity(obstacle);
 
 		{
 			auto input = m_window->GetInputManager();
 			if (input->IsKeyDown(KGR::Key::P))
 				KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ "Menu" });
 		}
+
 		{
 
 			auto mousePos = m_window->GetInputManager()->GetMousePosition();
@@ -1112,13 +1045,18 @@ struct GameScene : public IGameScene
 		}
 		
 
+
+
 	}
 	void Render() override
 	{
 		IGameScene::Render();
 	}
 
-	void spawn(glm::vec3 position, const std::string& meshPath, const std::string& texturePath)
+
+	////////////////////////////////////////////////////////////////////
+
+	void spawnColision(glm::vec3 position, const std::string& meshPath, const std::string& texturePath)
 	{
 		MeshComponent mesh;
 		mesh.mesh = &MeshLoader::Load(meshPath, m_window->App());
@@ -1140,13 +1078,18 @@ struct GameScene : public IGameScene
 		transform.SetScale({ 0.8, 0.8, 0.8 });
 
 		CollisionComp collider;
-		std::string nameCollision = "obstacle_" + std::to_string(obstacleCount++);
+		static constexpr int sizeName = 20;
+		std::string nameCollision = "obstacle_" + std::to_string(obstacleCount% sizeName);
+		obstacleCount++;
 
 		collider.collider = &ColliderManager::Load(nameCollision, mesh.mesh);
 
 		auto e = m_ecs.CreateEntity();
 		m_ecs.AddComponents(e, std::move(mesh), std::move(material), std::move(transform), std::move(collider), Obstacle{});
 	};
+
+
+	////////////////////////////////////////////////////////////////////
 
 	void spawnObstacle()
 	{
@@ -1155,9 +1098,10 @@ struct GameScene : public IGameScene
 
 		std::vector<std::pair<std::string, std::string>> mesh =
 		{
-			 {"Models/cube.obj", "Textures/test_mat_bc.png"}
-			,{ "Models/all_obstacle.obj", "Textures/test_mat_bc.png"}
-			,{"Models/bloc_L1_H1.obj", "Textures/test_mat_bc.png"}
+			{"Models/cube.obj", "Textures/bloc_BaseColor_Emissive.png"}
+			 //{"Models/cube.obj", "Textures/test_mat_bc.png"}
+			//,{ "Models/all_obstacle.obj", "Textures/test_mat_bc.png"}
+			//,{"Models/bloc_L1_H1.obj", "Textures/test_mat_bc.png"}
 		};
 
 
@@ -1166,10 +1110,10 @@ struct GameScene : public IGameScene
 		int randomMeshDroite = rand() % mesh.size();
 		int randomMeshGauche = rand() % mesh.size();
 
-		spawn({ lanesX[rand() % 3],  0.0f, -20.0f }, mesh[randomMeshBas].first, mesh[randomMeshBas].second);
-		spawn({ lanesX[rand() % 3],   6.0f, -20.0f }, mesh[randomMeshHaut].first, mesh[randomMeshHaut].second);
-		spawn({ -7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshGauche].first, mesh[randomMeshGauche].second);
-		spawn({ 7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshDroite].first, mesh[randomMeshDroite].second);
+		spawnColision({ lanesX[rand() % 3],  0.0f, -20.0f }, mesh[randomMeshBas].first, mesh[randomMeshBas].second);
+		spawnColision({ lanesX[rand() % 3],   6.0f, -20.0f }, mesh[randomMeshHaut].first, mesh[randomMeshHaut].second);
+		spawnColision({ -7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshGauche].first, mesh[randomMeshGauche].second);
+		spawnColision({ 7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshDroite].first, mesh[randomMeshDroite].second);
 	}
 };
 
@@ -1178,10 +1122,12 @@ struct CSComp
 	std::string targetScene;
 };
 
-struct MenuScene : public IGameScene
+struct Logo{};
+
+struct MenuPlay : public IGameScene
 {
 
-	MenuScene(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time) {}
+	MenuPlay(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time) {}
 
 	void Init(SceneManager* manager) override
 	{
@@ -1211,19 +1157,42 @@ struct MenuScene : public IGameScene
 			// create your ui with a virtual resolution and an anchor default center
 			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::Center);
 			// here set the position in the virtual resolution
-			ui.SetPos({ 1920.0f / 2.0f, 1080.0f / 2.0f });
+			ui.SetPos({ 1920/2,1080/2 });
 			// here the scale
-			ui.SetScale({ 500,500 });
+			ui.SetScale({ 1900,1080 });
 			// create a texture but be aware that only the first texture in the component will be use 
 			TextureComponent texture;
-			texture.texture = &TextureLoader::Load("Textures/texture.jpg", m_window->App());
+			texture.texture = &TextureLoader::Load("Textures/Menu_BG_without_logo.png", m_window->App());
 			CSComp comp;
-			comp.targetScene = "Game";
+			comp.targetScene = "MenuGO";
 			// same as always 
 			auto e = m_ecs.CreateEntity();
 			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp));
 
 		}
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::Center);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 1920 / 2,1080 / 2 });
+			// here the scale
+			ui.SetScale({ 1900,1080 });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/logo.png", m_window->App());
+			CSComp comp;
+			comp.targetScene = "MenuGO";
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp), Logo{});
+
+		}
+		
 		// TODO create backGround
 	}
 	void Update(float dt) override
@@ -1244,14 +1213,144 @@ struct MenuScene : public IGameScene
 				auto& u = m_ecs.GetComponent<UiComponent>(e);
 				t.Update(u.GetPosNdc(aspectRatio), u.GetScaleNdc(aspectRatio));
 
+				u.SetColor({ 1,1,1,1 });
+				
 				if (t.aabb.IsColliding(mouseinAR))
 				{
-					u.SetColor({ 1,0,0,1 });
 					if (m_window->GetInputManager()->IsMousePressed(KGR::Mouse::Left))
 						KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ m_ecs.GetComponent<CSComp>(e).targetScene });
 				}
-				else
-					u.SetColor({ 0,1,0,1 });
+			}
+		}
+	}
+
+
+};
+
+struct button{};
+
+struct MenuGO : public IGameScene
+{
+
+	MenuGO(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time) {}
+
+	void Init(SceneManager* manager) override
+	{
+		IGameScene::Init(manager);
+
+		{
+			// a calera need a cameraComponent that can be orthographic or perspective and a transform
+
+			// create the camera with the fov , the size of the window (must be updated ) and the far and near rendering and the mode 
+			CameraComponent cam = CameraComponent::Create(glm::radians(45.0f), m_window->GetSize().x, m_window->GetSize().y, 0.01f, 100.0f, CameraComponent::Type::Perspective);
+			TransformComponent transform;
+			// create a transform and set pos and dir 
+			transform.SetPosition({ 0,3,5 });
+			transform.LookAt({ 0,0,0 });
+			// now create an entity , an alias here std::uint64_t
+			auto e = m_ecs.CreateEntity();
+
+			// now move the component into the ecs
+			m_ecs.AddComponents(e, std::move(cam), std::move(transform));
+		}
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::Center);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 1920 / 2,1080 / 2 });
+			// here the scale
+			ui.SetScale({ 1900,1080 });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Menu_BG.png", m_window->App());
+			CSComp comp;
+			comp.targetScene = "Game";
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp));
+
+		}
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::Center);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 1920 / 2,1080 / 2 });
+			// here the scale
+			ui.SetScale({ 1900,1080 });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Menu_window.png", m_window->App());
+			CSComp comp;
+			comp.targetScene = "Game";
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp), Logo{});
+
+		}
+		{
+			TransformComponent2d transform;
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::Center);
+			ui.SetPos({ 596, 500 });
+			ui.SetScale({ 600,150 });
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Play button.png", m_window->App());
+			CSComp comp;
+			comp.targetScene = "Game";
+			auto e = m_ecs.CreateEntity();
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp), button{});
+
+		}
+		{
+			TransformComponent2d transform;
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::Center);
+			ui.SetPos({ 596, 700 });
+			ui.SetScale({ 600,150 });
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Quit button.png", m_window->App());
+			CSComp comp;
+			comp.targetScene = "Game";
+			auto e = m_ecs.CreateEntity();
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp), button{});
+
+		}
+		// TODO create backGround
+	}
+	void Update(float dt) override
+	{
+		IGameScene::Update(dt);
+		// TODO click on button
+
+		{
+
+			auto mousePos = m_window->GetInputManager()->GetMousePosition();
+			float aspectRatio = static_cast<float>(m_window->GetSize().x) / static_cast<float>(m_window->GetSize().y);
+			auto mouseinAR = UiComponent::VrToNdc(mousePos, m_window->GetSize(), aspectRatio, false);
+
+			auto es = m_ecs.GetAllComponentsView<CollisionComp2d, UiComponent, CSComp, button>();
+			for (auto e : es)
+			{
+				auto& t = m_ecs.GetComponent<CollisionComp2d>(e);
+				auto& u = m_ecs.GetComponent<UiComponent>(e);
+				t.Update(u.GetPosNdc(aspectRatio), u.GetScaleNdc(aspectRatio));
+
+				u.SetColor({ 1,1,1,1 });
+
+
+				if (t.aabb.IsColliding(mouseinAR))
+				{
+					if (m_window->GetInputManager()->IsMousePressed(KGR::Mouse::Left))
+						KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ m_ecs.GetComponent<CSComp>(e).targetScene });
+				}
 			}
 		}
 	}
