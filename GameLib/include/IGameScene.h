@@ -29,12 +29,11 @@
 #include "Math/SAT.h"
 #include <iostream>
 
-using ecsType = KGR::ECS::Registry<KGR::ECS::Entity::_64, 100>;
+using ecsType = KGR::ECS::Registry<KGR::ECS::Entity::_64, 500>;
 
 glm::vec3 camCurrentPos = { 0,8,15 };
 glm::vec3 camCurrentLook = { 0,-10, 0 };
 float smoothCamSpeed = 2.0f;
-bool isGravity = false;
 
 glm::vec3 PlayerCurrentPos = { 0,0,2 };
 float smoothPlayerSpeed = 6.0f;
@@ -125,6 +124,7 @@ struct Plateform
 struct Obstacle
 {
 	float velocityObstacle = 6.0f;
+
 };
 
 struct ChangeSceneEvent
@@ -256,7 +256,7 @@ struct GameScene : public IGameScene
 {
 	float spawnTimer = 0.0f;
 	float spawnInterval = 2.0f;
-	float obstacleCount = 0;
+	int obstacleCount = 0;
 
 	GameScene(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time) {}
 	void Init(SceneManager* manager) override
@@ -597,6 +597,24 @@ struct GameScene : public IGameScene
 						playerComp.StartPos = PositionState::DROITE;
 					}
 				}
+				glm::vec3 collisionScale;
+				if (input->IsKeyDown(KGR::Key::S))
+				{
+					if (playerComp.StartDir == DirectionState::HAUT || playerComp.StartDir == DirectionState::BAS)
+					{
+						collisionScale = glm::vec3{ 1.0f, 0.5f, 1.0f };
+						std::cout << "je me baisse plateforme haut ou bas" << std::endl;
+					}
+					else if(playerComp.StartDir == DirectionState::DROITE || playerComp.StartDir == DirectionState::GAUCHE)
+					{
+						collisionScale = glm::vec3{ 0.5f, 1.0f, 1.0f };
+						std::cout << "je me baisse plateforme gauche ou droite" << std::endl;
+					}
+				}
+				else
+				{
+					collisionScale = transform.GetScale();
+				}
 
 				glm::vec2 position = getPosition(playerComp.StartDir, playerComp.StartPos);
 				PlayerTargetPos.x = position.x;
@@ -680,16 +698,13 @@ struct GameScene : public IGameScene
 				gravity.uptadePhysique(dt);
 				glm::vec3 move = dir * gravity.getVelocity() * dt;
 
-				//if (glm::length(move) < 0.0001f)
-				//	continue;
 
 				transform.Translate(move);
 
 
 				auto boxOBB = colision.collider->ComputeGlobalOBB(
-					transform.GetScale(), transform.GetPosition(), transform.GetOrientation());
+					collisionScale, transform.GetPosition(), transform.GetOrientation());
 
-				//gravity.setIsGround(false);
 
 				bool grounded = false;
 
@@ -730,50 +745,70 @@ struct GameScene : public IGameScene
 				}
 				gravity.setIsGround(grounded);
 
+				/////////////////////////////////////////////////////////////////////////
+
+				auto obstacles = m_ecs.GetAllComponentsView<Obstacle, TransformComponent, CollisionComp>();
+				for (auto obs : obstacles)
+				{
+					auto& tObs = m_ecs.GetComponent<TransformComponent>(obs);
+					auto& colObs = m_ecs.GetComponent<CollisionComp>(obs);
+
+					auto obsOBB = colObs.collider->ComputeGlobalOBB(
+						tObs.GetScale(), tObs.GetPosition(), tObs.GetOrientation());
+
+					auto collision = KGR::SeparatingAxisTheorem::CheckCollisionOBB3D(boxOBB, obsOBB);
+					if (collision.IsColliding())
+					{
+						std::cout << "argg touche heeuu!" << std::endl;
+					}
+
+				}
+
+				////////////////////////////////////////////////////////////////////
+
 			}
 		}
 
 		////////////////////////////////////////////////////////////////////
 
-		//spawnTimer += dt;
-		//if (spawnTimer >= spawnInterval)
-		//{
-		//	spawnTimer = 0.0f;
-		//	spawnObstacle();
-		//}
+		spawnTimer += dt;
+		if (spawnTimer >= spawnInterval)
+		{
+			spawnTimer = 0.0f;
+			spawnObstacle();
+		}
 
-		//glm::vec3 playerPos(0.0f);
-		//auto playerView = m_ecs.GetAllComponentsView<playerComponent, TransformComponent>();
-		//for (auto& player : playerView)
-		//	playerPos = m_ecs.GetComponent<TransformComponent>(player).GetPosition();
-		//std::vector<decltype(m_ecs.CreateEntity())> toDestroy;
+		glm::vec3 playerPos(0.0f);
+		auto playerView = m_ecs.GetAllComponentsView<playerComponent, TransformComponent>();
+		for (auto& player : playerView)
+			playerPos = m_ecs.GetComponent<TransformComponent>(player).GetPosition();
+		std::vector<decltype(m_ecs.CreateEntity())> toDestroy;
 
-		//auto obsView = m_ecs.GetAllComponentsView<Obstacle, TransformComponent>();
+		auto obsView = m_ecs.GetAllComponentsView<Obstacle, TransformComponent>();
 
-		//for (auto obstacle : obsView)
-		//{
-		//	auto& obsTransform = m_ecs.GetComponent<TransformComponent>(obstacle);
-		//	auto& obs = m_ecs.GetComponent<Obstacle>(obstacle);
-		//	auto& obsCol = m_ecs.GetComponent<CollisionComp>(obstacle);
+		for (auto obstacle : obsView)
+		{
+			auto& obsTransform = m_ecs.GetComponent<TransformComponent>(obstacle);
+			auto& obs = m_ecs.GetComponent<Obstacle>(obstacle);
 
-		//	obsTransform.Translate({ 0.0f, 0.0f, obs.velocityObstacle * dt });
+			obsTransform.Translate({ worldCenter.x,worldCenter.y, obs.velocityObstacle * dt });
 
-		//	if (obsTransform.GetPosition().z > 10.0f)
-		//	{
-		//		toDestroy.push_back(obstacle);
-		//		continue;
-		//	}
-		//}
+			if (obsTransform.GetPosition().z > 10.0f)
+			{
+				toDestroy.push_back(obstacle);
+				continue;
+			}
+		}
 
-		//for (auto& obstacle : toDestroy)
-		//	m_ecs.DestroyEntity(obstacle);
-
+		for (auto& obstacle : toDestroy)
+			m_ecs.DestroyEntity(obstacle);
 
 		{
 			auto input = m_window->GetInputManager();
 			if (input->IsKeyDown(KGR::Key::P))
 				KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ "Menu" });
 		}
+
 		{
 
 			auto mousePos = m_window->GetInputManager()->GetMousePosition();
@@ -800,7 +835,10 @@ struct GameScene : public IGameScene
 		IGameScene::Render();
 	}
 
-	void spawn(glm::vec3 position, const std::string& meshPath, const std::string& texturePath)
+
+	////////////////////////////////////////////////////////////////////
+
+	void spawnColision(glm::vec3 position, const std::string& meshPath, const std::string& texturePath)
 	{
 		MeshComponent mesh;
 		mesh.mesh = &MeshLoader::Load(meshPath, m_window->App());
@@ -822,13 +860,17 @@ struct GameScene : public IGameScene
 		transform.SetScale({ 0.8, 0.8, 0.8 });
 
 		CollisionComp collider;
-		std::string nameCollision = "obstacle_" + std::to_string(obstacleCount++);
+		static constexpr int sizeName = 30;
+		std::string nameCollision = "obstacle_" + std::to_string(obstacleCount% sizeName);
+		obstacleCount++;
 
 		collider.collider = &ColliderManager::Load(nameCollision, mesh.mesh);
 
 		auto e = m_ecs.CreateEntity();
 		m_ecs.AddComponents(e, std::move(mesh), std::move(material), std::move(transform), std::move(collider), Obstacle{});
 	};
+
+	////////////////////////////////////////////////////////////////////
 
 	void spawnObstacle()
 	{
@@ -837,9 +879,10 @@ struct GameScene : public IGameScene
 
 		std::vector<std::pair<std::string, std::string>> mesh =
 		{
-			 {"Models/cube.obj", "Textures/test_mat_bc.png"}
-			,{ "Models/all_obstacle.obj", "Textures/test_mat_bc.png"}
-			,{"Models/bloc_L1_H1.obj", "Textures/test_mat_bc.png"}
+			{"Models/cube.obj", "Textures/bloc_BaseColor_Emissive.png"}
+			 //{"Models/cube.obj", "Textures/test_mat_bc.png"}
+			//,{ "Models/all_obstacle.obj", "Textures/test_mat_bc.png"}
+			//,{"Models/bloc_L1_H1.obj", "Textures/test_mat_bc.png"}
 		};
 
 
@@ -848,10 +891,10 @@ struct GameScene : public IGameScene
 		int randomMeshDroite = rand() % mesh.size();
 		int randomMeshGauche = rand() % mesh.size();
 
-		spawn({ lanesX[rand() % 3],  0.0f, -20.0f }, mesh[randomMeshBas].first, mesh[randomMeshBas].second);
-		spawn({ lanesX[rand() % 3],   6.0f, -20.0f }, mesh[randomMeshHaut].first, mesh[randomMeshHaut].second);
-		spawn({ -7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshGauche].first, mesh[randomMeshGauche].second);
-		spawn({ 7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshDroite].first, mesh[randomMeshDroite].second);
+		spawnColision({ lanesX[rand() % 3],  0.0f, -20.0f }, mesh[randomMeshBas].first, mesh[randomMeshBas].second);
+		spawnColision({ lanesX[rand() % 3],   6.0f, -20.0f }, mesh[randomMeshHaut].first, mesh[randomMeshHaut].second);
+		spawnColision({ -7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshGauche].first, mesh[randomMeshGauche].second);
+		spawnColision({ 7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshDroite].first, mesh[randomMeshDroite].second);
 	}
 };
 
@@ -940,8 +983,3 @@ struct MenuScene : public IGameScene
 
 
 };
-
-
-
-
-
