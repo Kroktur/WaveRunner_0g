@@ -250,8 +250,6 @@ protected:
 };
 
 
-
-
 struct GameScene : public IGameScene
 {
 	float spawnTimer = 0.0f;
