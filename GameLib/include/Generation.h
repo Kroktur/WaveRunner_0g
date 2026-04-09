@@ -88,10 +88,10 @@ static glm::vec3 Generate(GenBindRegistry& reg, my_ecsType& ecs,const PosMapper&
 				for (int i = 0; i < obstacle.mesh->GetSubMeshesCount(); ++i)
 				{
 					Material mat;
-					mat.baseColor = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", window.App());
-					mat.emissive = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", window.App());
-					mat.normalMap = &TextureLoader::Load("Textures/bloc_Normal.png", window.App());
-					mat.pbrMap = &TextureLoader::Load("Textures/bloc_ORM.png", window.App());
+					mat.baseColor = &TextureLoader::Load("Textures/Obstacles/BaseColor.png", window.App());
+					mat.emissive = &TextureLoader::Load("Textures/Obstacles/Emissive.png", window.App());
+					mat.normalMap = &TextureLoader::Load("Textures/Obstacles/Normal.png", window.App());
+					mat.pbrMap = &TextureLoader::Load("Textures/Obstacles/ORM.png", window.App());
 
 					tex.materials[i] = mat;
 				}
@@ -102,7 +102,6 @@ static glm::vec3 Generate(GenBindRegistry& reg, my_ecsType& ecs,const PosMapper&
 
 				TransformComponent transform;
 				transform.SetPosition(leftPos + advance * glm::vec3{ 0,0,-1 });
-				transform.SetScale({ 1.0f,1.0f,1.0f });
 				transform.RotateEuler<RotData::Orientation::Roll>(mapper.radAngle);
 
 				auto e_left = ecs.CreateEntity();
@@ -130,10 +129,10 @@ static glm::vec3 Generate(GenBindRegistry& reg, my_ecsType& ecs,const PosMapper&
 				for (int i = 0; i < obstacle.mesh->GetSubMeshesCount(); ++i)
 				{
 					Material mat;
-					mat.baseColor = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", window.App());
-					mat.emissive = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", window.App());
-					mat.normalMap = &TextureLoader::Load("Textures/bloc_Normal.png", window.App());
-					mat.pbrMap = &TextureLoader::Load("Textures/bloc_ORM.png", window.App());
+					mat.baseColor = &TextureLoader::Load("Textures/Obstacles/BaseColor.png", window.App());
+					mat.emissive = &TextureLoader::Load("Textures/Obstacles/Emissive.png", window.App());
+					mat.normalMap = &TextureLoader::Load("Textures/Obstacles/Normal.png", window.App());
+					mat.pbrMap = &TextureLoader::Load("Textures/Obstacles/ORM.png", window.App());
 
 					tex.materials[i] = mat;
 				}
@@ -144,7 +143,6 @@ static glm::vec3 Generate(GenBindRegistry& reg, my_ecsType& ecs,const PosMapper&
 
 				TransformComponent transform;
 				transform.SetPosition(midPos + advance * glm::vec3{ 0,0,-1 });
-				transform.SetScale({ 1.0f,1.0f,1.0f });
 				transform.RotateEuler<RotData::Orientation::Roll>(mapper.radAngle);
 
 				auto e_left = ecs.CreateEntity();
@@ -171,10 +169,10 @@ static glm::vec3 Generate(GenBindRegistry& reg, my_ecsType& ecs,const PosMapper&
 				for (int i = 0; i < obstacle.mesh->GetSubMeshesCount(); ++i)
 				{
 					Material mat;
-					mat.baseColor = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", window.App());
-					mat.emissive = &TextureLoader::Load("Textures/bloc_BaseColor_Emissive.png", window.App());
-					mat.normalMap = &TextureLoader::Load("Textures/bloc_Normal.png", window.App());
-					mat.pbrMap = &TextureLoader::Load("Textures/bloc_ORM.png", window.App());
+					mat.baseColor = &TextureLoader::Load("Textures/Obstacles/BaseColor.png", window.App());
+					mat.emissive = &TextureLoader::Load("Textures/Obstacles/Emissive.png", window.App());
+					mat.normalMap = &TextureLoader::Load("Textures/Obstacles/Normal.png", window.App());
+					mat.pbrMap = &TextureLoader::Load("Textures/Obstacles/ORM.png", window.App());
 
 					tex.materials[i] = mat;
 				}
@@ -185,7 +183,6 @@ static glm::vec3 Generate(GenBindRegistry& reg, my_ecsType& ecs,const PosMapper&
 
 				TransformComponent transform;
 				transform.SetPosition(rightPos + advance * glm::vec3{ 0,0,-1 } );
-				transform.SetScale({ 1.0f,1.0f,1.0f });
 				transform.RotateEuler<RotData::Orientation::Roll>(mapper.radAngle);
 
 				auto e_left = ecs.CreateEntity();

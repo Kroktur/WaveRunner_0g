@@ -108,8 +108,8 @@ inline std::unique_ptr<Collider> GenerateBox(const std::string& filePath, Mesh* 
     }
 
     KGR::AABB3D box;
-    box.m_min = { minX /2.0f, minY / 2.0f, minZ / 2.0f };
-    box.m_max = { maxX / 2.0f, maxY / 2.0f, maxZ / 2.0f };
+    box.m_min = { minX , minY , minZ  };
+    box.m_max = { maxX , maxY , maxZ };
 
     collide->localBox = box;
 

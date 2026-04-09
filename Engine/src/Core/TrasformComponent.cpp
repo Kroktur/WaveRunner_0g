@@ -30,12 +30,12 @@ glm::mat4 TransformComponent::GetTranslationMatrix()
 
 glm::vec3 TransformComponent::GetScale() const
 {
-	return m_scale.data * 2.0f;
+	return m_scale.data ;
 }
 
 void TransformComponent::SetScale(const glm::vec3& other)
 {
-	m_scale.data = other / 2.0f;
+	m_scale.data = other ;
 	m_scale.isDirty = true;
 }
 

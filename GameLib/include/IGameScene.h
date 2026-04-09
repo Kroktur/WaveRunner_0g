@@ -209,9 +209,9 @@ protected:
 	KGR::RenderWindow* m_window;
 };
 
-static constexpr float centerOffset = 7.5f;
+static constexpr float centerOffset = 5.0f;
 static constexpr glm::vec3 worldCenter = {0,0,0};
-static constexpr float offsetMove = 1.5f;
+static constexpr float offsetMove = 1.0f;
 static constexpr float genNeeded = -50;
 static constexpr float zValue = worldCenter.z + centerOffset;
 static constexpr float attenuationFactor = 3.0f;
@@ -356,7 +356,7 @@ struct GameScene : public IGameScene
 			}
 			TransformComponent transform_player;
 			transform_player.SetPosition({ 0,0,2 });
-			transform_player.SetScale({ 1.0f,1.0f,1.0f });
+			transform_player.SetScale({ 0.5f,0.5f,0.5f });
 
 			controlComponentPlayer player_input;
 			playerComponent player_comp;
@@ -530,7 +530,7 @@ struct GameScene : public IGameScene
 
 
 
-		reg.Register('c', "Models/CUBE.obj");
+		reg.Register('c', "Models/Obstacles/bloc_1x1.obj");
 
 
 	}
@@ -544,7 +544,7 @@ struct GameScene : public IGameScene
 			{
 				PosMapper mapper;
 				mapper.midPos = worldCenter + centerOffset * glm::vec3{ 1,0,0 } + glm::vec3{ 0,0.0f,lastZ };
-				mapper.radAngle = glm::radians(90.0f);
+				mapper.radAngle = glm::radians(-90.0f);
 				mapper.offset = offsetMove;
 				mapper.rightVec = glm::vec3{ 0,1,0 };
 
@@ -561,7 +561,7 @@ struct GameScene : public IGameScene
 			{
 				PosMapper mapper;
 				mapper.midPos = worldCenter - centerOffset * glm::vec3{ 1,0,0 } + glm::vec3{ 0,0.0f,lastZ };
-				mapper.radAngle = glm::radians(-90.0f);
+				mapper.radAngle = glm::radians(90.0f);
 				mapper.offset = offsetMove;
 				mapper.rightVec = glm::vec3{ 0,1,0 };
 
@@ -569,6 +569,7 @@ struct GameScene : public IGameScene
 				KGR::Tools::Random rd;
 				for (int i = 0; i < 150; ++i)
 				{
+
 					if (rd.getRandomNumber(0, 1) == 1)
 						tab.array[i] = 'c';
 				}
