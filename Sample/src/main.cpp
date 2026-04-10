@@ -33,6 +33,8 @@ int main(int argc, char** argv)
 	GenLoader::SetGlobalFIlePath(projectRoot / "Ressources" / "Gen");
 	manager.AddScene(std::make_unique<StartScene>(KGR::Tools::Chrono<float>::Time::CreateFromValue(1.0f / 60.0f)), "Start", true);
 	manager.AddScene(std::make_unique<PauseScene>(KGR::Tools::Chrono<float>::Time::CreateFromValue(1.0f / 60.0f)), "Pause", false);
+	manager.AddScene(std::make_unique<GameOver>(KGR::Tools::Chrono<float>::Time::CreateFromValue(1.0f / 60.0f)), "GameOver", false);
+
 	manager.AddScene(std::make_unique<ScoreScene>(KGR::Tools::Chrono<float>::Time::CreateFromValue(1.0f / 60.0f)), "Score", false);
 
 
