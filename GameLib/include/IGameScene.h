@@ -90,6 +90,7 @@ struct ChangeSceneEvent
 	std::string targetScene;
 };
 
+
 struct CloseEvent
 {
 	
@@ -238,6 +239,11 @@ struct ScoreText
 	
 };
 
+struct ScoreAdded
+{
+	std::string name = "unknow";
+	int number = 1;
+};
 
 struct GameScene : public IGameScene
 {
@@ -1094,7 +1100,7 @@ struct GameScene : public IGameScene
 		{
 			auto input = m_window->GetInputManager();
 			if (input->IsKeyDown(KGR::Key::P))
-				KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ "Start" });
+				KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ "Pause" });
 		}
 		{
 
@@ -1142,6 +1148,11 @@ struct CSComp
 struct ExitComp
 {
 
+};
+
+struct OldScene
+{
+	std::string targetScene;
 };
 
 struct StartScene : public IGameScene
@@ -1272,6 +1283,410 @@ struct StartScene : public IGameScene
 			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}),ExitComp {});
 
 		}
+
+
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 1207.0f, 693.0f });
+			// here the scale
+			ui.SetScale({ 370.0f, 240.0f });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Menu/record.png", m_window->App());
+			CSComp comp;
+			comp.targetScene = "Score";
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+
+			TextComp text;
+			text.text.font = &FontLoader::Load("Fonts/Lazer84.ttf", m_window->App(), 6);
+			text.text.SetText(" \n      Scores    \n ");
+			text.text.SetAlign(Text::Align::Center);
+			text.text.textTexture = &TextureLoader::Load("Textures/PBC.png", m_window->App());
+
+
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp),std::move(text));
+
+		}
+		// TODO create backGround
+	}
+	void Update(float dt) override
+	{
+		IGameScene::Update(dt);
+		// TODO click on buttonaé 
+		if (m_window->GetInputManager()->IsMousePressed(KGR::Mouse::Right))
+			KGR::EventBus<ScoreAdded>::Notify(ScoreAdded{ .number = 999 });
+		{
+
+			auto mousePos = m_window->GetInputManager()->GetMousePosition();
+			float aspectRatio = static_cast<float>(m_window->GetSize().x) / static_cast<float>(m_window->GetSize().y);
+			auto mouseinAR = UiComponent::VrToNdc(mousePos, m_window->GetSize(), aspectRatio, false);
+
+			auto es = m_ecs.GetAllComponentsView<CollisionComp2d, UiComponent, CSComp>();
+			for (auto e : es)
+			{
+				auto& t = m_ecs.GetComponent<CollisionComp2d>(e);
+				auto& u = m_ecs.GetComponent<UiComponent>(e);
+				t.Update(u.GetPosNdc(aspectRatio), u.GetScaleNdc(aspectRatio));
+
+				if (t.aabb.IsColliding(mouseinAR))
+				{
+					
+					if (m_window->GetInputManager()->IsMousePressed(KGR::Mouse::Left))
+					{
+						KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ m_ecs.GetComponent<CSComp>(e).targetScene });
+						if (m_ecs.GetComponent<CSComp>(e).targetScene == "Score")
+							KGR::EventBus<OldScene>::Notify(OldScene{ "Start" });
+
+					}
+				}
+			}
+			{
+				auto es = m_ecs.GetAllComponentsView<CollisionComp2d, UiComponent, ExitComp>();
+				for (auto e : es)
+				{
+					auto& t = m_ecs.GetComponent<CollisionComp2d>(e);
+					auto& u = m_ecs.GetComponent<UiComponent>(e);
+					t.Update(u.GetPosNdc(aspectRatio), u.GetScaleNdc(aspectRatio));
+
+					if (t.aabb.IsColliding(mouseinAR))
+					{
+						if (m_window->GetInputManager()->IsMousePressed(KGR::Mouse::Left))
+						KGR::EventBus <CloseEvent>::Notify({});
+					}
+				}
+			}
+		}
+	}
+
+
+};
+
+
+struct PauseScene : public IGameScene
+{
+
+	PauseScene(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time) {}
+
+	void Init(SceneManager* manager) override
+	{
+		IGameScene::Init(manager);
+
+		{
+			// a calera need a cameraComponent that can be orthographic or perspective and a transform
+
+			// create the camera with the fov , the size of the window (must be updated ) and the far and near rendering and the mode 
+			CameraComponent cam = CameraComponent::Create(glm::radians(45.0f), m_window->GetSize().x, m_window->GetSize().y, 0.01f, 100.0f, CameraComponent::Type::Perspective);
+			TransformComponent transform;
+			// create a transform and set pos and dir 
+			transform.SetPosition({ 0,3,5 });
+			transform.LookAt({ 0,0,0 });
+			// now create an entity , an alias here std::uint64_t
+			auto e = m_ecs.CreateEntity();
+
+			// now move the component into the ecs
+			m_ecs.AddComponents(e, std::move(cam), std::move(transform));
+		}
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 0.0f,0.0f });
+			// here the scale
+			ui.SetScale({ 1920.0f , 1080.0f });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Menu/Menu_BG.png", m_window->App());
+
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+
+
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture));
+
+		}
+
+
+
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 0.0f , 0.0f });
+			// here the scale
+			ui.SetScale({ 1920.0f ,1080.0f });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Menu/Menu_window.png", m_window->App());
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+
+
+
+
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}));
+
+		}
+
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 301.1f, 439.0f });
+			// here the scale
+			ui.SetScale({ 589.1f,152.5f });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Menu/Play button.png", m_window->App());
+			CSComp comp;
+			comp.targetScene = "Game";
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+
+
+
+
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp));
+
+		}
+
+
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 301.1f, 642 });
+			// here the scale
+			ui.SetScale({ 589.1f,152.5f });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Menu/Quit button.png", m_window->App());
+
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+
+			
+
+
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), ExitComp{});
+
+		}
+		// TODO create backGround
+	}
+	void Update(float dt) override
+	{
+		IGameScene::Update(dt);
+		// TODO click on buttonaé 
+
+		
+		{
+			auto mousePos = m_window->GetInputManager()->GetMousePosition();
+			float aspectRatio = static_cast<float>(m_window->GetSize().x) / static_cast<float>(m_window->GetSize().y);
+			auto mouseinAR = UiComponent::VrToNdc(mousePos, m_window->GetSize(), aspectRatio, false);
+
+			auto es = m_ecs.GetAllComponentsView<CollisionComp2d, UiComponent, CSComp>();
+			for (auto e : es)
+			{
+				auto& t = m_ecs.GetComponent<CollisionComp2d>(e);
+				auto& u = m_ecs.GetComponent<UiComponent>(e);
+				t.Update(u.GetPosNdc(aspectRatio), u.GetScaleNdc(aspectRatio));
+
+				if (t.aabb.IsColliding(mouseinAR))
+				{
+
+					if (m_window->GetInputManager()->IsMousePressed(KGR::Mouse::Left))
+						KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ m_ecs.GetComponent<CSComp>(e).targetScene });
+				}
+			}
+			{
+				auto es = m_ecs.GetAllComponentsView<CollisionComp2d, UiComponent, ExitComp>();
+				for (auto e : es)
+				{
+					auto& t = m_ecs.GetComponent<CollisionComp2d>(e);
+					auto& u = m_ecs.GetComponent<UiComponent>(e);
+					t.Update(u.GetPosNdc(aspectRatio), u.GetScaleNdc(aspectRatio));
+
+					if (t.aabb.IsColliding(mouseinAR))
+					{
+						if (m_window->GetInputManager()->IsMousePressed(KGR::Mouse::Left))
+							KGR::EventBus <CloseEvent>::Notify({});
+					}
+				}
+			}
+		}
+	}
+
+
+};
+
+struct OldComp
+{
+};
+struct ScoreTextComp
+{
+	
+};
+struct ScoreScene : public IGameScene
+{
+
+	bool ScoreDirty = true;
+	std::string oldScene = "";
+	std::string scoreFile = "test.txt";
+	ScoreScene(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time)
+	{
+		KGR::EventBus<OldScene>::AddListener(this);
+		KGR::EventBus<OldScene>::AddCallBack<ScoreScene>(&ScoreScene::SetOld);
+
+		KGR::EventBus<ScoreAdded>::AddListener(this);
+		KGR::EventBus<ScoreAdded>::AddCallBack<ScoreScene>(&ScoreScene::AddScore);
+		
+	}
+~ScoreScene() override
+	{
+		ScoreLoader::Load(scoreFile).Save();
+		KGR::EventBus<OldScene>::RemoveListener(this);
+		KGR::EventBus<ScoreAdded>::RemoveListener(this);
+	}
+	void AddScore(const ScoreAdded& score)
+	{
+		ScoreLoader::Load(scoreFile).AddScore({ score.name,score.number });
+		ScoreDirty = true;
+	}
+	void SetOld(const OldScene& old)
+	{
+		oldScene = old.targetScene;
+	}
+	void Init(SceneManager* manager) override
+	{
+		IGameScene::Init(manager);
+		ScoreLoader::Load(scoreFile);
+		{
+			// a calera need a cameraComponent that can be orthographic or perspective and a transform
+
+			// create the camera with the fov , the size of the window (must be updated ) and the far and near rendering and the mode 
+			CameraComponent cam = CameraComponent::Create(glm::radians(45.0f), m_window->GetSize().x, m_window->GetSize().y, 0.01f, 100.0f, CameraComponent::Type::Perspective);
+			TransformComponent transform;
+			// create a transform and set pos and dir 
+			transform.SetPosition({ 0,3,5 });
+			transform.LookAt({ 0,0,0 });
+			// now create an entity , an alias here std::uint64_t
+			auto e = m_ecs.CreateEntity();
+
+			// now move the component into the ecs
+			m_ecs.AddComponents(e, std::move(cam), std::move(transform));
+		}
+
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 0.0f,0.0f });
+			// here the scale
+			ui.SetScale({ 1920.0f , 1080.0f });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Menu/Menu_BG_without_logo.png", m_window->App());
+
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+
+
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture));
+
+		}
+
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 0.0f, 0.0f });
+			// here the scale
+			ui.SetScale({ 150.0f, 150.0f });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Menu/record.png", m_window->App());
+			OldComp comp;
+			
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+
+			TextComp text;
+			text.text.font = &FontLoader::Load("Fonts/Lazer84.ttf", m_window->App(), 6);
+			text.text.SetText(" \n      Return    \n ");
+			text.text.SetAlign(Text::Align::Center);
+			text.text.textTexture = &TextureLoader::Load("Textures/PBC.png", m_window->App());
+
+
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp), std::move(text));
+
+		}
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 300.0f, 100.0f });
+			// here the scale
+			ui.SetScale({ 1500.0f, 800 });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Menu/record.png", m_window->App());
+			OldComp comp;
+
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+
+			TextComp text;
+			text.text.font = &FontLoader::Load("Fonts/Lazer84.ttf", m_window->App(), 6);
+			text.text.SetText("  ");
+			text.text.SetAlign(Text::Align::Left);
+			text.text.textTexture = &TextureLoader::Load("Textures/PBC.png", m_window->App());
+
+
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp), std::move(text), ScoreTextComp{});
+
+		}
 		// TODO create backGround
 	}
 	void Update(float dt) override
@@ -1294,9 +1709,24 @@ struct StartScene : public IGameScene
 
 				if (t.aabb.IsColliding(mouseinAR))
 				{
-					
+
 					if (m_window->GetInputManager()->IsMousePressed(KGR::Mouse::Left))
 						KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ m_ecs.GetComponent<CSComp>(e).targetScene });
+				}
+			}
+			{
+				auto es = m_ecs.GetAllComponentsView<CollisionComp2d, UiComponent, OldComp>();
+				for (auto e : es)
+				{
+					auto& t = m_ecs.GetComponent<CollisionComp2d>(e);
+					auto& u = m_ecs.GetComponent<UiComponent>(e);
+					t.Update(u.GetPosNdc(aspectRatio), u.GetScaleNdc(aspectRatio));
+
+					if (t.aabb.IsColliding(mouseinAR))
+					{
+						if (m_window->GetInputManager()->IsMousePressed(KGR::Mouse::Left))
+							KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ oldScene });
+					}
 				}
 			}
 			{
@@ -1310,12 +1740,42 @@ struct StartScene : public IGameScene
 					if (t.aabb.IsColliding(mouseinAR))
 					{
 						if (m_window->GetInputManager()->IsMousePressed(KGR::Mouse::Left))
-						KGR::EventBus < CloseEvent>::Notify({});
+							KGR::EventBus <CloseEvent>::Notify({});
 					}
+				}
+			}
+
+			{
+				if (ScoreDirty)
+				{
+					auto es = m_ecs.GetAllComponentsView<CollisionComp2d, UiComponent, TextComp, ScoreTextComp>();
+					for (auto e : es)
+					{
+							m_ecs.GetComponent<TextComp>(e).text.SetText(ToStr());
+					}
+					ScoreDirty = false;
 				}
 			}
 		}
 	}
 
+	std::string ToStr()
+	{
+		auto score = ScoreLoader::Load(scoreFile).Get();
+		std::string scoreTot =" \n \n ";
+		for (int i = 0 ; i < score.size() ; ++i)
+		{
+			std::string addingScore = std::string("                         ") + score[i].first + std::string(" : ") + std::to_string(score[i].second);
+			std::string addingSize = "";
+			
+			if (addingScore.size() < 100)
+			{
+				addingSize.resize(100 - addingScore.size(), ' ');
+			}
+			scoreTot += addingScore + addingSize + "\n";
+		}
+		scoreTot += "\n ";
+		return scoreTot;
 
+	}
 };

@@ -1,0 +1,10 @@
+Score : 10
+toto12;10000
+toto4;1000
+unknow;999
+unknow;999
+toto1;100
+toto2;100
+toto3;100
+toto1;10
+toto1;1
