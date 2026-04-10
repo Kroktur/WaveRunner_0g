@@ -821,7 +821,7 @@ void KGR::_Vulkan::VulkanCore::RegisterText(Text* text, Texture* texture, const 
 	const glm::vec2& screenSize)
 {
 
-	text->Upload(this);
+	text->Upload(this,syncObject.GetCurrentFrame());
 	auto valid = data.GetValid();
 	valid.raw1[3] = screenSize.x;
 	valid.raw2[3] = screenSize.y;
@@ -998,7 +998,7 @@ void KGR::_Vulkan::VulkanCore::Render(GLFWwindow* window, const glm::vec4& color
 	for (auto& ui : m_textData)
 	{
 		// bind the vertex and indexBuffer
-		ui.text->Bind(currentBuffer);
+		ui.text->Bind(currentBuffer, syncObject.GetCurrentFrame());
 		currentBuffer->pushConstants<UiData::UiValidData>(uiPipeline.GetLayout(), vk::ShaderStageFlagBits::eVertex, 0,ui.data);
 		ui.texture->Bind(currentBuffer, &uiPipeline.GetLayout(), 0);
 		ui.text->textTexture->Bind(currentBuffer, &uiPipeline.GetLayout(), 1);

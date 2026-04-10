@@ -28,7 +28,7 @@
 #include "Math/SAT.h"
 #include <iostream>
 
-
+#include "Score.h"
 #include "Generation.h"
 
 using ecsType = KGR::ECS::Registry<KGR::ECS::Entity::_64, 100>;
@@ -90,8 +90,13 @@ struct ChangeSceneEvent
 	std::string targetScene;
 };
 
+struct CloseEvent
+{
+	
+};
 struct GameSceneManager : public SceneManager
 {
+	bool shouldClose = false;
 	GameSceneManager(const std::filesystem::path& path)
 	{
 		KGR::RenderWindow::Init();
@@ -100,10 +105,16 @@ struct GameSceneManager : public SceneManager
 		KGR::Audio::WavStreamComponent::Init();
 		KGR::EventBus<ChangeSceneEvent>::AddListener(this);
 		KGR::EventBus<ChangeSceneEvent>::AddCallBack<GameSceneManager>(&GameSceneManager::ChangeScene);
+
+		KGR::EventBus<CloseEvent>::AddListener(this);
+		KGR::EventBus<CloseEvent>::AddCallBack<GameSceneManager>(&GameSceneManager::Close);
 	}
 	~GameSceneManager() override
 	{
 		KGR::EventBus<ChangeSceneEvent>::RemoveListener(this);
+
+		KGR::EventBus<CloseEvent>::RemoveListener(this);
+
 	}
 	KGR::RenderWindow* GetWindow() const
 	{
@@ -111,18 +122,23 @@ struct GameSceneManager : public SceneManager
 	}
 	bool LoopCondition() const override
 	{
+		if (shouldClose)
+			return false;
 		return !m_window->ShouldClose();
 	}
 	void Destroy() override
 	{
 		m_window->Destroy();
-
 		SceneManager::Destroy();
 		KGR::RenderWindow::End();
 	}
 	void ChangeScene(const ChangeSceneEvent& event)
 	{
 		SetCurrentScene(event.targetScene);
+	}
+	void Close(const CloseEvent& event)
+	{
+		shouldClose = true;
 	}
 private:
 	std::unique_ptr<KGR::RenderWindow> m_window;
@@ -202,7 +218,7 @@ struct IGameScene : public Scene
 				m_window->RegisterText(ui, transform, text);
 			}
 		}
-		m_window->Render({ 0.007, 0.003f, 0.009f , 1});
+		m_window->Render({ 0.0f, 0.0f, 0.0f , 1});
 	}
 protected:
 	ecsType m_ecs;
@@ -215,13 +231,22 @@ static constexpr float offsetMove = 1.0f;
 static constexpr float genNeeded = -50;
 static constexpr float zValue = worldCenter.z + centerOffset;
 static constexpr float attenuationFactor = 3.0f;
+static constexpr int maxFile = 25;
+
+struct ScoreText
+{
+	
+};
+
 
 struct GameScene : public IGameScene
 {
 	float spawnTimer = 0.0f;
 	float spawnInterval = 2.0f;
 	float obstacleCount = 0;
-	float lastZ = zValue;
+	float lastZ = zValue - 10.0f;
+	ScoreAlign allign = ScoreAlign{ 8};
+	int score = 0;
 	GenBindRegistry reg;
 	GameScene(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time) {}
 	void Init(SceneManager* manager) override
@@ -289,12 +314,12 @@ struct GameScene : public IGameScene
 			auto e = m_ecs.CreateEntity();
 			TextComp text;
 			text.text.font = &FontLoader::Load("Fonts/Lazer84.ttf", m_window->App(),6);
-			text.text.SetText("je pense donc je suis !\nje mange des arbres ");
+			text.text.SetText(" ");
 			text.text.SetAlign(Text::Align::Center);
 			text.text.textTexture = &TextureLoader::Load("Textures/PBC.png", m_window->App());
 
 
-			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(text));
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(text), ScoreText{});
 
 		}
 
@@ -329,7 +354,7 @@ struct GameScene : public IGameScene
 			// create the transform and set all the data
 			TransformComponent transform_down;
 			transform_down.SetPosition(worldCenter + glm::vec3{0,-1,0} * centerOffset);
-			transform_down.SetScale({ 1.0f,1.0f,1.0f });
+			transform_down.SetScale({ 1.0f,1.0f,4.0f });
 			// same create an entity / id
 			auto e_down = m_ecs.CreateEntity();
 			// fill the component
@@ -363,7 +388,6 @@ struct GameScene : public IGameScene
 			TransformComponent transform_player;
 			transform_player.SetPosition(worldCenter);
 			transform_player.SetScale({ 1.0f,1.0f,1.0f });
-			transform_player.SetRotation({ 0.0f,0.0f,glm::radians(180.0f) });
 
 			controlComponentPlayer player_input;
 			playerComponent player_comp;
@@ -402,7 +426,7 @@ struct GameScene : public IGameScene
 
 			TransformComponent transform_up;
 			transform_up.SetPosition(worldCenter + glm::vec3{ 0,1,0 } * centerOffset);
-			transform_up.SetScale({ 1.0f,1.0f,1.0f });
+			transform_up.SetScale({ 1.0f,1.0f,4.0f });
 			transform_up.RotateEuler<RotData::Orientation::Roll>(glm::radians(180.0f));
 
 			auto e_up = m_ecs.CreateEntity();
@@ -435,7 +459,7 @@ struct GameScene : public IGameScene
 
 			TransformComponent transform_left;
 			transform_left.SetPosition(worldCenter + glm::vec3{ -1,0,0 } * centerOffset);
-			transform_left.SetScale({ 1.0f,1.0f,1.0f });
+			transform_left.SetScale({ 1.0f,1.0f,4.0f });
 			transform_left.RotateEuler<RotData::Orientation::Roll>(glm::radians(90.0f));
 
 			auto e_left = m_ecs.CreateEntity();
@@ -468,7 +492,7 @@ struct GameScene : public IGameScene
 
 			TransformComponent transform_right;
 			transform_right.SetPosition(worldCenter + glm::vec3{ 1,0,0 } * centerOffset);
-			transform_right.SetScale({ 1.0f,1.0f,1.0f });
+			transform_right.SetScale({ 1.0f,1.0f,4.0f });
 			transform_right.RotateEuler<RotData::Orientation::Roll>(glm::radians(-90.0f));
 
 			auto e_right = m_ecs.CreateEntity();
@@ -566,16 +590,33 @@ struct GameScene : public IGameScene
 
 
 
-		reg.Register('c', "Models/Obstacles/bloc_1x1.obj");
+		reg.Register('a', "Models/Obstacles/bloc_1x1.obj");
+		reg.Register('z', "Models/Obstacles/bloc_1x2.obj");
+		reg.Register('e', "Models/Obstacles/bloc_1x3.obj");
+		reg.Register('q', "Models/Obstacles/bloc_2x1.obj");
+		reg.Register('s', "Models/Obstacles/bloc_2x2.obj");
+		reg.Register('d', "Models/Obstacles/bloc_2x3.obj");
 
-
+		for (int i = 1 ; i <= maxFile; ++i)
+		{
+			GenLoader::Load("Level_" + std::to_string(i) + ".txt");
+		}
 	}
 	void Update(float dt) override
 	{
 		IGameScene::Update(dt);
+		score++;
+		{
+			auto es = m_ecs.GetAllComponentsView<TextComp, ScoreText>();
+			for (auto e : es)
+			{
+				m_ecs.GetComponent<TextComp>(e).text.SetText(allign.Compute(score));
+			}
+		}
 
 		if (lastZ > genNeeded)
 		{
+			KGR::Tools::Random rd;
 			//right
 			{
 				PosMapper mapper;
@@ -583,7 +624,8 @@ struct GameScene : public IGameScene
 				mapper.radAngle = glm::radians(-90.0f);
 				mapper.offset = offsetMove;
 				mapper.rightVec = glm::vec3{ 0,1,0 };
-				Generate(reg, m_ecs, mapper, GenLoader::Load("gen.txt"), *m_window).z;
+				auto random = rd.getRandomNumber(1, maxFile);
+				Generate(reg, m_ecs, mapper, GenLoader::Load("Level_" + std::to_string(random) + ".txt"), *m_window).z;
 			}
 			// left
 			{
@@ -592,7 +634,8 @@ struct GameScene : public IGameScene
 				mapper.radAngle = glm::radians(90.0f);
 				mapper.offset = offsetMove;
 				mapper.rightVec = glm::vec3{ 0,1,0 };
-				Generate(reg, m_ecs, mapper, GenLoader::Load("gen.txt"), *m_window).z;
+				auto random = rd.getRandomNumber(1, maxFile);
+				Generate(reg, m_ecs, mapper, GenLoader::Load("Level_" + std::to_string(random) + ".txt"), *m_window).z;
 			}
 			// up
 			{
@@ -601,8 +644,8 @@ struct GameScene : public IGameScene
 				mapper.radAngle = glm::radians(-180.0f);
 				mapper.offset = offsetMove;
 				mapper.rightVec = glm::vec3{1 ,0,0 };
-				
-				Generate(reg, m_ecs, mapper, GenLoader::Load("gen.txt"), *m_window).z;
+				auto random = rd.getRandomNumber(1, maxFile);
+				Generate(reg, m_ecs, mapper, GenLoader::Load("Level_" + std::to_string(random) + ".txt"), *m_window).z;
 			}
 			//Dawn
 			{
@@ -611,8 +654,8 @@ struct GameScene : public IGameScene
 				mapper.radAngle = 0.0f;
 				mapper.offset = offsetMove;
 				mapper.rightVec = glm::vec3{ 1 ,0,0 };
-			
-				lastZ += Generate(reg, m_ecs, mapper, GenLoader::Load("gen.txt"), *m_window).z;
+				auto random = rd.getRandomNumber(1, maxFile);
+				lastZ += Generate(reg, m_ecs, mapper, GenLoader::Load("Level_" + std::to_string(random) + ".txt"), *m_window).z;
 			}
 
 			
@@ -883,21 +926,27 @@ struct GameScene : public IGameScene
 					switch (playerComp.StartDir)
 					{
 					case DirectionState::BAS:
+						transform.SetRotation({ 0.0f,0.0f,0.0f });
 						camTargetPos = worldCenter + glm::vec3{ 0,centerOffset / attenuationFactor,zValue };
 						camTargetLook = worldCenter + glm::vec3{ 0,-centerOffset / attenuationFactor,-zValue };
 						break;
 
 					case DirectionState::HAUT:
+						transform.SetRotation({ 0.0f,0.0f,glm::radians(180.0f) });
 						camTargetPos = worldCenter + glm::vec3{ 0,-centerOffset / attenuationFactor,zValue };
 						camTargetLook = worldCenter + glm::vec3{ 0,centerOffset / attenuationFactor,-zValue };
 						break;
 
 					case DirectionState::GAUCHE:
+						transform.SetRotation({ 0.0f,0.0f,glm::radians(-90.0f) });
+
 						camTargetPos = worldCenter + glm::vec3{ centerOffset / attenuationFactor,0,zValue };
 						camTargetLook = worldCenter + glm::vec3{ -centerOffset / attenuationFactor,0,-zValue };
 						break;
 
 					case DirectionState::DROITE:
+						transform.SetRotation({ 0.0f,0.0f,glm::radians(90.0f) });
+
 						camTargetPos = worldCenter + glm::vec3{ -centerOffset / attenuationFactor,0,zValue };
 						camTargetLook = worldCenter + glm::vec3{ centerOffset / attenuationFactor,0,-zValue };
 						break;
@@ -979,19 +1028,19 @@ struct GameScene : public IGameScene
 					}
 					
 				}
-
+				static float speed = 10.0f;
 				{
 					auto plateforms = m_ecs.GetAllComponentsView<PlatFormMove, TransformComponent, CollisionComp,LifeTimeComp>();
 					for (auto p : plateforms)
 					{
 						
 						auto& tP = m_ecs.GetComponent<TransformComponent>(p);
-						tP.Translate(dt
+						tP.Translate(dt * speed
 							* glm::vec3{ 0,0,1 });
-						if (tP.GetPosition().z > zValue)
+						if (tP.GetPosition().z > zValue  * 4)
 							m_ecs.GetComponent<LifeTimeComp>(p).isDead = true;
 					}
-					lastZ += dt * 1.0f;
+					lastZ += dt * 1.0f * speed;
 					
 					
 					
@@ -1040,46 +1089,12 @@ struct GameScene : public IGameScene
 
 		}
 
-		////////////////////////////////////////////////////////////////////
-
-		//spawnTimer += dt;
-		//if (spawnTimer >= spawnInterval)
-		//{
-		//	spawnTimer = 0.0f;
-		//	spawnObstacle();
-		//}
-
-		//glm::vec3 playerPos(0.0f);
-		//auto playerView = m_ecs.GetAllComponentsView<playerComponent, TransformComponent>();
-		//for (auto& player : playerView)
-		//	playerPos = m_ecs.GetComponent<TransformComponent>(player).GetPosition();
-		//std::vector<decltype(m_ecs.CreateEntity())> toDestroy;
-
-		//auto obsView = m_ecs.GetAllComponentsView<Obstacle, TransformComponent>();
-
-		//for (auto obstacle : obsView)
-		//{
-		//	auto& obsTransform = m_ecs.GetComponent<TransformComponent>(obstacle);
-		//	auto& obs = m_ecs.GetComponent<Obstacle>(obstacle);
-		//	auto& obsCol = m_ecs.GetComponent<CollisionComp>(obstacle);
-
-		//	obsTransform.Translate({ 0.0f, 0.0f, obs.velocityObstacle * dt });
-
-		//	if (obsTransform.GetPosition().z > 10.0f)
-		//	{
-		//		toDestroy.push_back(obstacle);
-		//		continue;
-		//	}
-		//}
-
-		//for (auto& obstacle : toDestroy)
-		//	m_ecs.DestroyEntity(obstacle);
-
+		
 
 		{
 			auto input = m_window->GetInputManager();
 			if (input->IsKeyDown(KGR::Key::P))
-				KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ "Menu" });
+				KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ "Start" });
 		}
 		{
 
@@ -1117,60 +1132,6 @@ struct GameScene : public IGameScene
 	{
 		IGameScene::Render();
 	}
-
-	void spawn(glm::vec3 position, const std::string& meshPath, const std::string& texturePath)
-	{
-		MeshComponent mesh;
-		mesh.mesh = &MeshLoader::Load(meshPath, m_window->App());
-
-		MaterialComponent material;
-		material.materials.resize(mesh.mesh->GetSubMeshesCount());
-
-
-		for (int i = 0; i < mesh.mesh->GetSubMeshesCount(); ++i)
-		{
-			Material mat;
-			mat.baseColor = &TextureLoader::Load(texturePath, m_window->App());
-
-			material.materials[i] = mat;
-		}
-
-		TransformComponent transform;
-		transform.SetPosition(position);
-		transform.SetScale({ 0.8, 0.8, 0.8 });
-
-		CollisionComp collider;
-		std::string nameCollision = "obstacle_" + std::to_string(obstacleCount++);
-
-		collider.collider = &ColliderManager::Load(nameCollision, mesh.mesh);
-
-		auto e = m_ecs.CreateEntity();
-		m_ecs.AddComponents(e, std::move(mesh), std::move(material), std::move(transform), std::move(collider), Obstacle{});
-	};
-
-	void spawnObstacle()
-	{
-		float lanesX[3] = { -1.3f, 0.0f, 1.3f };
-		float lanesY[3] = { 1.2f, 2.5f, 3.8f };
-
-		std::vector<std::pair<std::string, std::string>> mesh =
-		{
-			 {"Models/cube.obj", "Textures/test_mat_bc.png"}
-			,{ "Models/all_obstacle.obj", "Textures/test_mat_bc.png"}
-			,{"Models/bloc_L1_H1.obj", "Textures/test_mat_bc.png"}
-		};
-
-
-		int randomMeshBas = rand() % mesh.size();
-		int randomMeshHaut = rand() % mesh.size();
-		int randomMeshDroite = rand() % mesh.size();
-		int randomMeshGauche = rand() % mesh.size();
-
-		spawn({ lanesX[rand() % 3],  0.0f, -20.0f }, mesh[randomMeshBas].first, mesh[randomMeshBas].second);
-		spawn({ lanesX[rand() % 3],   6.0f, -20.0f }, mesh[randomMeshHaut].first, mesh[randomMeshHaut].second);
-		spawn({ -7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshGauche].first, mesh[randomMeshGauche].second);
-		spawn({ 7.0f, lanesY[rand() % 3], -20.0f }, mesh[randomMeshDroite].first, mesh[randomMeshDroite].second);
-	}
 };
 
 struct CSComp
@@ -1178,10 +1139,15 @@ struct CSComp
 	std::string targetScene;
 };
 
-struct MenuScene : public IGameScene
+struct ExitComp
 {
 
-	MenuScene(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time) {}
+};
+
+struct StartScene : public IGameScene
+{
+
+	StartScene(const KGR::Tools::Chrono<float>::Time& time) :IGameScene(time) {}
 
 	void Init(SceneManager* manager) override
 	{
@@ -1209,19 +1175,101 @@ struct MenuScene : public IGameScene
 			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
 			//transform.SetRotation(glm::radians(-45.0f));
 			// create your ui with a virtual resolution and an anchor default center
-			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::Center);
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
 			// here set the position in the virtual resolution
-			ui.SetPos({ 1920.0f / 2.0f, 1080.0f / 2.0f });
+			ui.SetPos({0.0f,0.0f});
 			// here the scale
-			ui.SetScale({ 500,500 });
+			ui.SetScale({ 1920.0f , 1080.0f });
 			// create a texture but be aware that only the first texture in the component will be use 
 			TextureComponent texture;
-			texture.texture = &TextureLoader::Load("Textures/texture.jpg", m_window->App());
+			texture.texture = &TextureLoader::Load("Textures/Menu/Menu_BG.png", m_window->App());
+			
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+
+
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture));
+
+		}
+
+
+
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 0.0f , 0.0f} );
+			// here the scale
+			ui.SetScale({ 1920.0f ,1080.0f });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Menu/Menu_window.png", m_window->App());
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+
+
+
+			
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}));
+
+		}
+
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 301.1f, 439.0f });
+			// here the scale
+			ui.SetScale({ 589.1f,152.5f });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Menu/Play button.png", m_window->App());
 			CSComp comp;
 			comp.targetScene = "Game";
 			// same as always 
 			auto e = m_ecs.CreateEntity();
+
+
+
+			
 			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}), std::move(comp));
+
+		}
+
+
+		{
+			// you need texture transform and ui component
+			// for the transform it only use for the rotation 
+			TransformComponent2d transform;
+			// here you can set a rotation ( ROTATION FROM THE CENTER OF THE MESH )
+			//transform.SetRotation(glm::radians(-45.0f));
+			// create your ui with a virtual resolution and an anchor default center
+			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
+			// here set the position in the virtual resolution
+			ui.SetPos({ 301.1f, 642 });
+			// here the scale
+			ui.SetScale({ 589.1f,152.5f });
+			// create a texture but be aware that only the first texture in the component will be use 
+			TextureComponent texture;
+			texture.texture = &TextureLoader::Load("Textures/Menu/Quit button.png", m_window->App());
+			
+			// same as always 
+			auto e = m_ecs.CreateEntity();
+
+
+
+
+			m_ecs.AddComponents(e, std::move(transform), std::move(ui), std::move(texture), std::move(CollisionComp2d{}),ExitComp {});
 
 		}
 		// TODO create backGround
@@ -1229,7 +1277,7 @@ struct MenuScene : public IGameScene
 	void Update(float dt) override
 	{
 		IGameScene::Update(dt);
-		// TODO click on button
+		// TODO click on buttonaé 
 
 		{
 
@@ -1246,12 +1294,25 @@ struct MenuScene : public IGameScene
 
 				if (t.aabb.IsColliding(mouseinAR))
 				{
-					u.SetColor({ 1,0,0,1 });
+					
 					if (m_window->GetInputManager()->IsMousePressed(KGR::Mouse::Left))
 						KGR::EventBus<ChangeSceneEvent>::Notify(ChangeSceneEvent{ m_ecs.GetComponent<CSComp>(e).targetScene });
 				}
-				else
-					u.SetColor({ 0,1,0,1 });
+			}
+			{
+				auto es = m_ecs.GetAllComponentsView<CollisionComp2d, UiComponent, ExitComp>();
+				for (auto e : es)
+				{
+					auto& t = m_ecs.GetComponent<CollisionComp2d>(e);
+					auto& u = m_ecs.GetComponent<UiComponent>(e);
+					t.Update(u.GetPosNdc(aspectRatio), u.GetScaleNdc(aspectRatio));
+
+					if (t.aabb.IsColliding(mouseinAR))
+					{
+						if (m_window->GetInputManager()->IsMousePressed(KGR::Mouse::Left))
+						KGR::EventBus < CloseEvent>::Notify({});
+					}
+				}
 			}
 		}
 	}

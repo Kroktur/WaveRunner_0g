@@ -140,7 +140,6 @@ namespace KGR
          * @brief Returns the input manager associated with this window.
          */
         InputManager* GetInputManager();
-
     private:
         _Vulkan::VulkanCore m_core; ///< Vulkan backend instance.
         KGR::_GLFW::Window m_window; ///< GLFW window wrapper.

@@ -31,7 +31,8 @@ int main(int argc, char** argv)
 	GameSceneManager manager(projectRoot / "Ressources");
 
 	GenLoader::SetGlobalFIlePath(projectRoot / "Ressources" / "Gen");
-	manager.AddScene(std::make_unique<MenuScene>(KGR::Tools::Chrono<float>::Time::CreateFromValue(1.0f / 60.0f)), "Menu", true);
+	manager.AddScene(std::make_unique<StartScene>(KGR::Tools::Chrono<float>::Time::CreateFromValue(1.0f / 60.0f)), "Start", true);
+
 	manager.AddScene(std::make_unique<GameScene>(KGR::Tools::Chrono<float>::Time::CreateFromValue(1.0f/1000.0f)),"Game",false);
 	manager.Run(KGR::Tools::Chrono<float>::Time::CreateFromValue(1.0f / 60.0f));
 }
