@@ -1,3 +1,4 @@
+
 #pragma once
 #include "Core/Scene.h"
 #include <filesystem>
@@ -44,7 +45,9 @@ float smoothPlayerSpeed = 6.0f;
 struct controlComponentPlayer
 {
 	glm::vec3 PlayerTargetPos = { 0.0f, 0.0f, 2.0f };
+
 };
+
 
 enum class DirectionState
 {
@@ -322,14 +325,15 @@ struct GameScene : public IGameScene
 			CameraComponent cam = CameraComponent::Create(glm::radians(90.0f), m_window->GetSize().x, m_window->GetSize().y, 0.01f, 200.0f, CameraComponent::Type::Perspective);
 			TransformComponent transform;
 			// create a transform and set pos and dir 
-			transform.SetPosition({ 0,0,0 });
-			transform.LookAt({ 0,0,0 });
+			transform.SetPosition({ 0,5,7 });
+			transform.LookAt({ 0,1,2 });
 			// now create an entity , an alias here std::uint64_t
 			auto e = m_ecs.CreateEntity();
 
 			// now move the component into the ecs
 			m_ecs.AddComponents(e, std::move(cam), std::move(transform));
 		}
+
 		{
 			// you need texture transform and ui component
 			// for the transform it only use for the rotation 
@@ -339,7 +343,7 @@ struct GameScene : public IGameScene
 			// create your ui with a virtual resolution and an anchor default center
 			UiComponent ui({ 1920,1080 }, UiComponent::Anchor::LeftTop);
 			// here set the position in the virtual resolution
-			ui.SetPos({ 50.0f, 50.0f});
+			ui.SetPos({ 50.0f, 50.0f });
 			// here the scale
 			ui.SetScale({ 486.0f,177.0f });
 			// create a texture but be aware that only the first texture in the component will be use 
@@ -889,14 +893,11 @@ struct GameScene : public IGameScene
 						camTargetLook = worldCenter + glm::vec3{ centerOffset / attenuationFactor,0,-zValue };
 						break;
 					}
-
 					camCurrentPos = glm::mix(camCurrentPos, camTargetPos, smoothCamSpeed * dt);
 					camCurrentLook = glm::mix(camCurrentLook, camTargetLook, smoothCamSpeed * dt);
 
 					camTransform.SetPosition(camCurrentPos);
 					camTransform.LookAt(camCurrentLook);
-
-					///////////////////////////////////////////////////////////////////////////////
 				}
 
 				glm::vec3 dir(0.0f);
@@ -920,7 +921,7 @@ struct GameScene : public IGameScene
 				if (input->IsKeyDown(KGR::Key::Z) && gravity.getIsGround())
 				{
 					gravity.jump();
-				}				
+				}
 
 				gravity.uptadePhysique(dt);
 				glm::vec3 move = dir * gravity.getVelocity() * dt;
@@ -971,7 +972,7 @@ struct GameScene : public IGameScene
 						}
 
 					}
-					
+
 				}
 				static float speed = 10.0f;
 				{
