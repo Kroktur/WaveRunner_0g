@@ -9,7 +9,11 @@ namespace KGR::_Vulkan
 	class VulkanCore;
 }
 
-
+struct BufferData
+{
+	KGR::_Vulkan::Buffer m_vertexBuffer;
+	KGR::_Vulkan::Buffer m_indexBuffer;
+};
 
 struct Text
 {
@@ -19,7 +23,6 @@ struct Text
 		Left,
 		Right
 	};
-
 	friend KGR::_Vulkan::VulkanCore;
 	Text() = default;
 	AtlasFont* font = nullptr;
@@ -28,13 +31,16 @@ struct Text
 	void SetAlign(const Align& align);
 	std::string GetText() const;
 	Align GetAlign() const;
-	void Bind(const vk::raii::CommandBuffer* buffer);
+	void Bind(const vk::raii::CommandBuffer* buffer, int frameId);
 private:
 	static float Offset(const Align& align, float totalAdvance, float currentAdvance);
-	void Upload(KGR::_Vulkan::VulkanCore* core);
+	void Upload(KGR::_Vulkan::VulkanCore* core,int frameId);
 	size_t GetIndexSize() const;
-	KGR::_Vulkan::Buffer m_vertexBuffer;
-	KGR::_Vulkan::Buffer m_indexBuffer;   
+
+	std::vector<BufferData> m_buffers;
+
+	std::vector<bool> dirty;
+
 	DataDirty<std::string> m_message {true," "};
 	size_t m_size = 0;
 	Align m_align = Align::Center;

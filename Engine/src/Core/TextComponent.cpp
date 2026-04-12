@@ -5,12 +5,20 @@
 void Text::SetText(const std::string& text)
 {
 	m_message.data = text;
+	for (auto d : dirty)
+	{
+		d = true;
+	}
 	m_message.isDirty = true;
 }
 
 void Text::SetAlign(const Align& align)
 {
 	m_align = align;
+	for (auto d : dirty)
+	{
+		d = true;
+	}
 	m_message.isDirty = true;
 }
 
@@ -24,10 +32,10 @@ Text::Align Text::GetAlign() const
 	return m_align;
 }
 
-void Text::Bind(const vk::raii::CommandBuffer* buffer)
+void Text::Bind(const vk::raii::CommandBuffer* buffer, int frameId)
 {
-	buffer->bindVertexBuffers(0, *m_vertexBuffer.Get(), { 0 });
-	buffer->bindIndexBuffer(*m_indexBuffer.Get(), 0, vk::IndexType::eUint32);
+	buffer->bindVertexBuffers(0, *m_buffers[frameId].m_vertexBuffer.Get(), { 0 });
+	buffer->bindIndexBuffer(*m_buffers[frameId].m_indexBuffer.Get(), 0, vk::IndexType::eUint32);
 }
 
 float Text::Offset(const Align& align, float totalAdvance, float currentAdvance)
@@ -45,20 +53,26 @@ float Text::Offset(const Align& align, float totalAdvance, float currentAdvance)
 	}
 }
 
-void Text::Upload(KGR::_Vulkan::VulkanCore* core)
+void Text::Upload(KGR::_Vulkan::VulkanCore* core , int frameId)
 {
-	if (!m_message.isDirty)
+
+	if (m_buffers.size() > frameId && !dirty[frameId])
 		return;
 
 
 	// if the message is dirty clear the buffer and let's calculate
-	m_message.isDirty = false;
-	if (m_vertexBuffer.GetSize() != 0)
+	if (m_buffers.size() <= frameId )
 	{
-		m_vertexBuffer.Get().clear();
-		m_indexBuffer.Get().clear();
+		m_buffers.resize(frameId + 1 );
+		dirty.resize(frameId  + 1, true);
+		
 	}
-	
+	else if (m_buffers[frameId].m_vertexBuffer.GetSize() != 0)
+	{
+		m_buffers[frameId].m_vertexBuffer.Get().clear();
+		m_buffers[frameId].m_indexBuffer.Get().clear();
+	}
+	dirty[frameId] = false;
 
 	// create the temp vector for vertices and index
 	std::vector<Vertex2D> vertices;
@@ -159,8 +173,8 @@ void Text::Upload(KGR::_Vulkan::VulkanCore* core)
 		startY += lineOffset;
 	}
 	// create the buffer and set the size for draw 
-	m_vertexBuffer = core->CreateVertexBuffer(vertices);
-	m_indexBuffer = core->CreateIndexBuffer(indices);
+	m_buffers[frameId].m_vertexBuffer = core->CreateVertexBuffer(vertices);
+	m_buffers[frameId].m_indexBuffer = core->CreateIndexBuffer(indices);
 	m_size = indices.size();
 }
 
